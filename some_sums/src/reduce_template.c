@@ -84,68 +84,24 @@ reducer(char *name,
         fone_t fone_int64,
         fone_t fone_int32);
 
-/* sum00 ---------------------------------------------------------------- */
+/* sum00 ----------------------------------------------------------------- */
 
-/* dtype = [['float64'], ['float32']] */
-REDUCE_ALL(sum00, DTYPE0)
-{
-    npy_DTYPE0 ai, asum = 0;
-    INIT_ALL
-    BN_BEGIN_ALLOW_THREADS
-    WHILE {
-        FOR {
-            ai = AI(DTYPE0);
-            if (ai == ai) asum += ai;
-        }
-        NEXT
-    }
-    BN_END_ALLOW_THREADS
-    return PyFloat_FromDouble(asum);
-}
-
-REDUCE_ONE(sum00, DTYPE0)
-{
-    npy_DTYPE0 ai, asum;
-    INIT_ONE(DTYPE0, DTYPE0)
-    BN_BEGIN_ALLOW_THREADS
-    if (LENGTH == 0) {
-        FILL_Y(0)
-    }
-    else {
-        WHILE {
-            asum = 0;
-            FOR {
-                ai = AI(DTYPE0);
-                if (ai == ai) asum += ai;
-            }
-            YPP = asum;
-            NEXT
-        }
-    }
-    BN_END_ALLOW_THREADS
-    return y;
-}
-/* dtype end */
-
-/* dtype = [['int64'], ['int32']] */
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE_ALL(sum00, DTYPE0)
 {
     npy_DTYPE0 asum = 0;
     INIT_ALL
-    BN_BEGIN_ALLOW_THREADS
     WHILE {
         FOR asum += AI(DTYPE0);
         NEXT
     }
-    BN_END_ALLOW_THREADS
-    return PyInt_FromLong(asum);
+    return PyFloat_FromDouble(asum);
 }
 
 REDUCE_ONE(sum00, DTYPE0)
 {
     npy_DTYPE0 asum;
     INIT_ONE(DTYPE0, DTYPE0)
-    BN_BEGIN_ALLOW_THREADS
     if (LENGTH == 0) {
         FILL_Y(0)
     }
@@ -157,12 +113,12 @@ REDUCE_ONE(sum00, DTYPE0)
             NEXT
         }
     }
-    BN_END_ALLOW_THREADS
     return y;
 }
 /* dtype end */
 
 REDUCE_MAIN(sum00)
+
 
 /* python strings -------------------------------------------------------- */
 
