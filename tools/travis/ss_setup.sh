@@ -8,8 +8,8 @@ elif [ "${TEST_RUN}" = "sdist" ]; then
     python setup.py sdist
     ARCHIVE=`ls dist/*.tar.gz`
     pip install --verbose "${ARCHIVE[0]}"
-    python "tools/test-installed-bottleneck.py"
+    python "tools/test-installed-some_sums.py"
 else
     pip install --verbose "."
-    python "tools/test-installed-bottleneck.py"
+    python "tools/test-installed-some_sums.py"
 fi

@@ -110,12 +110,12 @@ slow(char *name, PyObject *args, PyObject *kwds)
     PyObject *out = NULL;
 
     if (slow_module == NULL) {
-        /* bottleneck.slow has not been imported during the current
+        /* some_sums.slow has not been imported during the current
          * python session. Only import it once per session to save time */
-        slow_module = PyImport_ImportModule("bottleneck.slow");
+        slow_module = PyImport_ImportModule("some_sums.slow");
         if (slow_module == NULL) {
             PyErr_SetString(PyExc_RuntimeError,
-                            "Cannot import bottleneck.slow");
+                            "Cannot import some_sums.slow");
             return NULL;
         }
     }
@@ -123,7 +123,7 @@ slow(char *name, PyObject *args, PyObject *kwds)
     func = PyObject_GetAttrString(slow_module, name);
     if (func == NULL) {
         PyErr_Format(PyExc_RuntimeError,
-                     "Cannot import %s from bottleneck.slow", name);
+                     "Cannot import %s from some_sums.slow", name);
         return NULL;
     }
     if (PyCallable_Check(func)) {
@@ -136,7 +136,7 @@ slow(char *name, PyObject *args, PyObject *kwds)
     else {
         Py_XDECREF(func);
         PyErr_Format(PyExc_RuntimeError,
-                     "bottleneck.slow.%s is not callable", name);
+                     "some_sums.slow.%s is not callable", name);
         return NULL;
     }
     Py_XDECREF(func);

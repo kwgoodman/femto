@@ -19,7 +19,7 @@ Where
 =====
 
 ===================   ========================================================
- code                 http://github.com/kwgoodman/bottleneck
+ code                 http://github.com/kwgoodman/some_sums
  mailing list         http://groups.google.com/group/bottle-neck
 ===================   ========================================================
 
