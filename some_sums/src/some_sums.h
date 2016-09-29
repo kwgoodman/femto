@@ -1,5 +1,22 @@
-#ifndef BOTTLENECK_H
-#define BOTTLENECK_H
+/*
+    This file is part of some_sums.
+
+    some_sums is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    some_sums is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with some_sums.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef SOME_SUMS_H
+#define SOME_SUMS_H
 
 #include <Python.h>
 #define NPY_NO_DEPRECATED_API NPY_1_11_API_VERSION
@@ -61,95 +78,26 @@
  * NAN and INFINITY like macros (same behavior as glibc for NAN, same as C99
  * for INFINITY). Copied from NumPy.
  */
-BN_INLINE static float __bn_inff(void)
+BN_INLINE static float __ss_inff(void)
 {
     const union { npy_uint32 __i; float __f;} __bint = {0x7f800000UL};
     return __bint.__f;
 }
 
-BN_INLINE static float __bn_nanf(void)
+BN_INLINE static float __ss_nanf(void)
 {
     const union { npy_uint32 __i; float __f;} __bint = {0x7fc00000UL};
     return __bint.__f;
 }
 
-#define BN_INFINITYF __bn_inff()
-#define BN_NANF      __bn_nanf()
+#define BN_INFINITYF __ss_inff()
+#define BN_NANF      __ss_nanf()
 #define BN_INFINITY ((npy_double)BN_INFINITYF)
 #define BN_NAN      ((npy_double)BN_NANF)
 
 #define C_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_C_CONTIGUOUS)
 #define F_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_F_CONTIGUOUS)
 #define IS_CONTIGUOUS(a) (C_CONTIGUOUS(a) || F_CONTIGUOUS(a))
-
-/* WIRTH ----------------------------------------------------------------- */
-
-/*
- WIRTH macro based on:
-   Fast median search: an ANSI C implementation
-   Nicolas Devillard - ndevilla AT free DOT fr
-   July 1998
- which, in turn, took the algorithm from
-   Wirth, Niklaus
-   Algorithms + data structures = programs, p. 366
-   Englewood Cliffs: Prentice-Hall, 1976
-
- Adapted for Bottleneck:
- (C) 2016 Keith Goodman
-*/
-
-#define WIRTH(dtype) \
-    x = B(dtype, k); \
-    i = l; \
-    j = r; \
-    do { \
-        while (B(dtype, i) < x) i++; \
-        while (x < B(dtype, j)) j--; \
-        if (i <= j) { \
-            npy_##dtype atmp = B(dtype, i); \
-            B(dtype, i) = B(dtype, j); \
-            B(dtype, j) = atmp; \
-            i++; \
-            j--; \
-        } \
-    } while (i <= j); \
-    if (j < k) l = i; \
-    if (k < i) r = j;
-
-/* partition ------------------------------------------------------------- */
-
-#define PARTITION(dtype) \
-    while (l < r) { \
-        npy_##dtype x; \
-        npy_##dtype al = B(dtype, l); \
-        npy_##dtype ak = B(dtype, k); \
-        npy_##dtype ar = B(dtype, r); \
-        if (al > ak) { \
-            if (ak < ar) { \
-                if (al < ar) { \
-                    B(dtype, k) = al; \
-                    B(dtype, l) = ak; \
-                } \
-                else { \
-                    B(dtype, k) = ar; \
-                    B(dtype, r) = ak; \
-                } \
-            } \
-        } \
-        else { \
-            if (ak > ar) { \
-                if (al > ar) { \
-                    B(dtype, k) = al; \
-                    B(dtype, l) = ak; \
-                } \
-                else { \
-                    B(dtype, k) = ar; \
-                    B(dtype, r) = ak; \
-                } \
-            } \
-        } \
-        WIRTH(dtype) \
-    }
 
 /* slow ------------------------------------------------------------------ */
 
@@ -196,4 +144,4 @@ slow(char *name, PyObject *args, PyObject *kwds)
     return out;
 }
 
-#endif /* BOTTLENECK_H */
+#endif /* SOME_SUMS_H */

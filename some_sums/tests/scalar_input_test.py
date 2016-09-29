@@ -1,11 +1,11 @@
 "Check that functions can handle scalar input"
 
 from numpy.testing import assert_array_almost_equal
-import some_sums as bn
+import some_sums as ss
 
 
 def unit_maker(func, func0, args=tuple()):
-    "Test that bn.xxx gives the same output as bn.slow.xxx for scalar input."
+    "Test that ss.xxx gives the same output as ss.slow.xxx for scalar input."
     msg = '\nfunc %s | input %s\n'
     a = -9
     argsi = [a] + list(args)
@@ -17,6 +17,6 @@ def unit_maker(func, func0, args=tuple()):
 
 def test_scalar_input():
     "Test scalar input"
-    funcs = bn.get_functions('reduce')
+    funcs = ss.get_functions('reduce')
     for func in funcs:
-        yield unit_maker, func, eval('bn.slow.%s' % func.__name__)
+        yield unit_maker, func, eval('ss.slow.%s' % func.__name__)

@@ -4,14 +4,14 @@ import warnings
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-import some_sums as bn
+import some_sums as ss
 
 DTYPES = [np.float64, np.float32, np.int64, np.int32]
 
 
 def test_list_input():
     "Check that functions can handle list input"
-    for func in bn.get_functions('all'):
+    for func in ss.get_functions('all'):
         if func.__name__ != 'replace':
             yield unit_maker, func
 
@@ -34,11 +34,11 @@ def lists(dtypes=DTYPES):
 
 
 def unit_maker(func):
-    "Test that bn.xxx gives the same output as bn.slow.xxx for list input."
+    "Test that ss.xxx gives the same output as ss.slow.xxx for list input."
     msg = '\nfunc %s | input %s (%s) | shape %s\n'
     msg += '\nInput array:\n%s\n'
     name = func.__name__
-    func0 = eval('bn.slow.%s' % name)
+    func0 = eval('ss.slow.%s' % name)
     for i, a in enumerate(lists()):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

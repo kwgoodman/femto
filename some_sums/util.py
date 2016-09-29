@@ -1,4 +1,4 @@
-import some_sums as bn
+import some_sums as ss
 
 
 def get_functions(module_name, as_string=False):
@@ -18,18 +18,6 @@ def get_functions(module_name, as_string=False):
 
 def func_dict():
     d = {}
-    d['reduce'] = [bn.nansum,
-                   bn.nanmean,
-                   bn.nanstd,
-                   bn.nanvar,
-                   bn.nanmin,
-                   bn.nanmax,
-                   bn.median,
-                   bn.nanmedian,
-                   bn.ss,
-                   bn.nanargmin,
-                   bn.nanargmax,
-                   bn.anynan,
-                   bn.allnan,
+    d['reduce'] = [ss.nansum,
                    ]
     return d

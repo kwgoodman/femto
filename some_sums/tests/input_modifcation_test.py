@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 from numpy.testing import assert_equal
-import some_sums as bn
+import some_sums as ss
 
 DTYPES = [np.float64, np.float32, np.int64, np.int32]
 nan = np.nan
@@ -36,7 +36,7 @@ def arrays(dtypes):
 
 
 def unit_maker(func, nans=True):
-    "Test that bn.xxx gives the same output as np.xxx."
+    "Test that ss.xxx gives the same output as np.xxx."
     msg = "\nInput array modifed by %s.\n\n"
     msg += "input array before:\n%s\nafter:\n%s\n"
     for i, a in enumerate(arrays(DTYPES)):
@@ -62,5 +62,5 @@ def unit_maker(func, nans=True):
 
 def test_modification():
     "Test for illegal inplace modification of input array"
-    for func in bn.get_functions('all'):
+    for func in ss.get_functions('all'):
         yield unit_maker, func

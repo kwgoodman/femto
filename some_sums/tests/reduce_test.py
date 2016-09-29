@@ -8,14 +8,14 @@ import numpy as np
 from numpy.testing import (assert_equal, assert_raises,
                            assert_array_almost_equal)
 
-import some_sums as bn
+import some_sums as ss
 
 DTYPES = [np.float64, np.float32, np.int64, np.int32]
 
 
 def test_reduce():
     "test reduce functions"
-    for func in bn.get_functions('reduce'):
+    for func in ss.get_functions('reduce'):
         yield unit_maker, func
 
 
@@ -84,11 +84,11 @@ def arrays(dtypes, name):
 
 
 def unit_maker(func, decimal=5):
-    "Test that bn.xxx gives the same output as bn.slow.xxx."
+    "Test that ss.xxx gives the same output as ss.slow.xxx."
     fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s\n'
     fmt += '\nInput array:\n%s\n'
     name = func.__name__
-    func0 = eval('bn.slow.%s' % name)
+    func0 = eval('ss.slow.%s' % name)
     for i, a in enumerate(arrays(DTYPES, name)):
         if a.ndim == 0:
             axes = [None]  # numpy can't handle e.g. np.nanmean(9, axis=-1)
@@ -118,9 +118,9 @@ def unit_maker(func, decimal=5):
                 err_msg = fmt % tup
                 if actualraised != desiredraised:
                     if actualraised:
-                        fmt2 = '\nbn.%s raised\nbn.slow.%s ran\n\n%s'
+                        fmt2 = '\nss.%s raised\nss.slow.%s ran\n\n%s'
                     else:
-                        fmt2 = '\nbn.%s ran\nbn.slow.%s raised\n\n%s'
+                        fmt2 = '\nss.%s ran\nss.slow.%s raised\n\n%s'
                     msg = fmt2 % (name, name, traceback.format_exc())
                     err_msg += msg
                     ok_(False, err_msg)
@@ -137,7 +137,7 @@ def unit_maker(func, decimal=5):
 
 def test_strides():
     "test reduce functions with non-C ordered arrays"
-    for func in bn.get_functions('reduce'):
+    for func in ss.get_functions('reduce'):
         yield unit_maker_strides, func
 
 
@@ -171,13 +171,13 @@ def arrays_strides(dtypes=DTYPES):
 
 
 def unit_maker_strides(func, decimal=5):
-    "Test that bn.xxx gives the same output as bn.slow.xxx."
+    "Test that ss.xxx gives the same output as ss.slow.xxx."
     fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s\n'
     fmt += '\nInput array:\n%s\n'
     fmt += '\nStrides: %s\n'
     fmt += '\nFlags: \n%s\n'
     name = func.__name__
-    func0 = eval('bn.slow.%s' % name)
+    func0 = eval('ss.slow.%s' % name)
     for i, a in enumerate(arrays_strides()):
         if a.ndim == 0:
             axes = [None]  # numpy can't handle e.g. np.nanmean(9, axis=-1)
@@ -199,7 +199,7 @@ def unit_maker_strides(func, decimal=5):
 
 def test_arg_parsing():
     "test argument parsing"
-    for func in bn.get_functions('reduce'):
+    for func in ss.get_functions('reduce'):
         yield unit_maker_argparse, func
 
 
@@ -207,7 +207,7 @@ def unit_maker_argparse(func, decimal=5):
     "test argument parsing."
 
     name = func.__name__
-    func0 = eval('bn.slow.%s' % name)
+    func0 = eval('ss.slow.%s' % name)
 
     a = np.array([1., 2, 3])
 
@@ -253,7 +253,7 @@ def unit_maker_argparse(func, decimal=5):
 
 def test_arg_parse_raises():
     "test argument parsing raises in reduce"
-    for func in bn.get_functions('reduce'):
+    for func in ss.get_functions('reduce'):
         yield unit_maker_argparse_raises, func
 
 
@@ -270,77 +270,3 @@ def unit_maker_argparse_raises(func):
         assert_raises(TypeError, func, a, ddof=0)
     assert_raises(TypeError, func, a, a)
     # assert_raises(TypeError, func, None) results vary
-
-
-# ---------------------------------------------------------------------------
-# Check that exceptions are raised
-
-def test_nanmax_size_zero(dtypes=DTYPES):
-    "Test nanmax for size zero input arrays."
-    shapes = [(0,), (2, 0), (1, 2, 0)]
-    for shape in shapes:
-        for dtype in dtypes:
-            a = np.zeros(shape, dtype=dtype)
-            assert_raises(ValueError, bn.nanmax, a)
-            assert_raises(ValueError, bn.slow.nanmax, a)
-
-
-def test_nanmin_size_zero(dtypes=DTYPES):
-    "Test nanmin for size zero input arrays."
-    shapes = [(0,), (2, 0), (1, 2, 0)]
-    for shape in shapes:
-        for dtype in dtypes:
-            a = np.zeros(shape, dtype=dtype)
-            assert_raises(ValueError, bn.nanmin, a)
-            assert_raises(ValueError, bn.slow.nanmin, a)
-
-
-# ---------------------------------------------------------------------------
-# nanstd and nanvar regression test (issue #60)
-
-def test_nanstd_issue60():
-    "nanstd regression test (issue #60)"
-
-    f = bn.nanstd([1.0], ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanstd([1.0], ddof=1)
-    assert_equal(f, s, err_msg="bn.nanstd([1.0], ddof=1) wrong")
-
-    f = bn.nanstd([1], ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanstd([1], ddof=1)
-    assert_equal(f, s, err_msg="bn.nanstd([1], ddof=1) wrong")
-
-    f = bn.nanstd([1, np.nan], ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanstd([1, np.nan], ddof=1)
-    assert_equal(f, s, err_msg="bn.nanstd([1, nan], ddof=1) wrong")
-
-    f = bn.nanstd([[1, np.nan], [np.nan, 1]], axis=0, ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanstd([[1, np.nan], [np.nan, 1]], axis=0, ddof=1)
-    assert_equal(f, s, err_msg="issue #60 regression")
-
-
-def test_nanvar_issue60():
-    "nanvar regression test (issue #60)"
-
-    f = bn.nanvar([1.0], ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanvar([1.0], ddof=1)
-    assert_equal(f, s, err_msg="bn.nanvar([1.0], ddof=1) wrong")
-
-    f = bn.nanvar([1], ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanvar([1], ddof=1)
-    assert_equal(f, s, err_msg="bn.nanvar([1], ddof=1) wrong")
-
-    f = bn.nanvar([1, np.nan], ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanvar([1, np.nan], ddof=1)
-    assert_equal(f, s, err_msg="bn.nanvar([1, nan], ddof=1) wrong")
-
-    f = bn.nanvar([[1, np.nan], [np.nan, 1]], axis=0, ddof=1)
-    with np.errstate(invalid='ignore'):
-        s = bn.slow.nanvar([[1, np.nan], [np.nan, 1]], axis=0, ddof=1)
-    assert_equal(f, s, err_msg="issue #60 regression")
