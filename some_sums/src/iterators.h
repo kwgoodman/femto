@@ -18,7 +18,7 @@
 #include <numpy/arrayobject.h>
 
 /*
-   Bottleneck iterators are based on ideas from NumPy's PyArray_IterAllButAxis
+   some_sums iterators are based on ideas from NumPy's PyArray_IterAllButAxis
    and PyArray_ITER_NEXT.
 */
 

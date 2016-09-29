@@ -26,7 +26,7 @@ Where
 License
 =======
 
-Bottleneck is distributed under the GPL v3. See the LICENSE file for details.
+`some_sums` is distributed under the GPL v3. See the LICENSE file for details.
 
 Install
 =======
@@ -34,7 +34,7 @@ Install
 Requirements:
 
 ======================== ====================================================
-Bottleneck               Python 2.7, 3.4, 3.5; NumPy 1.11.0
+some_sums                Python 2.7, 3.4, 3.5; NumPy 1.11.0
 Compile                  gcc, clang, MinGW or MSVC
 Unit tests               nose
 ======================== ====================================================

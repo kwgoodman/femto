@@ -2,8 +2,8 @@
 
 
 # If you bork the build (e.g. by messing around with the templates),
-# you still want to be able to import Bottleneck so that you can
-# rebuild using the templates. So try to import the compiled Bottleneck
+# you still want to be able to import some_sums so that you can
+# rebuild using the templates. So try to import the compiled some_sums
 # functions to the top level, but move on if not successful.
 try:
     from .reduce import nansum

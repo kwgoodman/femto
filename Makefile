@@ -1,4 +1,4 @@
-# Bottleneck Makefile
+# some_sums Makefile
 
 PYTHON=python
 
@@ -50,7 +50,7 @@ doc: clean build
 	${PYTHON} setup.py build_sphinx
 
 clean:
-	rm -rf build dist Bottleneck.egg-info
+	rm -rf build dist some_sums.egg-info
 	find . -name \*.pyc -delete
 	rm -rf ${srcdir}/*.html ${srcdir}/build
 	rm -rf ${srcdir}/*.c

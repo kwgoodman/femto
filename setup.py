@@ -40,7 +40,7 @@ def prepare_modules():
 def get_long_description():
     with open('README.rst', 'r') as fid:
         long_description = fid.read()
-    idx = max(0, long_description.find("Bottleneck is a collection"))
+    idx = max(0, long_description.find("some_sums is a collection"))
     long_description = long_description[idx:]
     return long_description
 
@@ -55,25 +55,27 @@ def get_version_str():
     return version
 
 
-CLASSIFIERS = ["Development Status :: 4 - Beta",
-               "Environment :: Console",
-               "Intended Audience :: Science/Research",
-               "License :: OSI Approved :: BSD License",
-               "Operating System :: OS Independent",
-               "Programming Language :: C",
-               "Programming Language :: Python",
-               "Programming Language :: Python :: 3",
-               "Topic :: Scientific/Engineering"]
+CLASSIFIERS = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 "
+    "or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: C",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering"]
 
 
-metadata = dict(name='Bottleneck',
+metadata = dict(name='some_sums',
                 maintainer="Keith Goodman",
                 maintainer_email="bottle-neck@googlegroups.com",
                 description="Fast NumPy array functions written in C",
                 long_description=get_long_description(),
                 url="https://github.com/kwgoodman/some_sums",
-                download_url="http://pypi.python.org/pypi/Bottleneck",
-                license="Simplified BSD",
+                download_url="http://pypi.python.org/pypi/some_sums",
+                license="GNU GPLv3+",
                 classifiers=CLASSIFIERS,
                 platforms="OS Independent",
                 version=get_version_str(),
