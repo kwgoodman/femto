@@ -2,14 +2,14 @@ from cStringIO import StringIO
 import sys
 import os
 
-import bottleneck as bn
+import some_sums as ss
 
 
 def update_readme():
 
     # run benchmark suite while capturing output; indent
     with Capturing() as bench_list:
-        bn.bench()
+        ss.bench()
     bench_list = ['    ' + b for b in bench_list]
 
     # read readme

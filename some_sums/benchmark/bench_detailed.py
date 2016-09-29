@@ -1,6 +1,6 @@
 
 import numpy as np
-import bottleneck as bn
+import some_sums as ss
 from .autotimeit import autotimeit
 
 __all__ = ['bench_detailed']
@@ -14,8 +14,8 @@ def bench_detailed(function='nansum', fraction_nan=0.0):
     ----------
     function : str, optional
         Name of function, as a string, to benchmark. Default ('nansum') is
-        to benchmark bn.nansum. If `function` is 'all' then detailed
-        benchmarks are run on all bottleneck functions.
+        to benchmark ss.nansum. If `function` is 'all' then detailed
+        benchmarks are run on all some_sums functions.
     fraction_nan : float, optional
         Fraction of array elements that should, on average, be NaN. The
         default (0.0) is not to set any elements to NaN.
@@ -27,8 +27,8 @@ def bench_detailed(function='nansum', fraction_nan=0.0):
     """
 
     if function == 'all':
-        # benchmark all bottleneck functions
-        funcs = bn.get_functions('all', as_string=True)
+        # benchmark all some_sums functions
+        funcs = ss.get_functions('all', as_string=True)
         funcs.sort()
         for func in funcs:
             bench_detailed(func, fraction_nan)
@@ -40,7 +40,7 @@ def bench_detailed(function='nansum', fraction_nan=0.0):
 
     # Header
     print('%s benchmark' % function)
-    print("%sBottleneck %s; Numpy %s" % (tab, bn.__version__, np.__version__))
+    print("%sBottleneck %s; Numpy %s" % (tab, ss.__version__, np.__version__))
     print("%sSpeed is NumPy time divided by Bottleneck time" % tab)
     if fraction_nan == 0:
         print("%sNone of the array elements are NaN" % tab)
@@ -71,13 +71,13 @@ def benchsuite(function, fraction_nan):
 
     # setup is called before each run of each function
     setup = """
-        from bottleneck import %s as bn_fn
+        from some_sums import %s as ss_fn
         try: from numpy import %s as sl_fn
-        except ImportError: from bottleneck.slow import %s as sl_fn
+        except ImportError: from some_sums.slow import %s as sl_fn
 
         # avoid all-nan slice warnings from np.median and np.nanmedian
-        if "%s" == "median": from bottleneck.slow import median as sl_fn
-        if "%s" == "nanmedian": from bottleneck.slow import nanmedian as sl_fn
+        if "%s" == "median": from some_sums.slow import median as sl_fn
+        if "%s" == "nanmedian": from some_sums.slow import nanmedian as sl_fn
 
         from numpy import array, nan
         from numpy.random import RandomState
@@ -89,11 +89,11 @@ def benchsuite(function, fraction_nan):
     setup = '\n'.join([s.strip() for s in setup.split('\n')])
 
     # what kind of function signature do we need to use?
-    if function in bn.get_functions('reduce', as_string=True):
+    if function in ss.get_functions('reduce', as_string=True):
         index = 0
     elif function in ['rankdata', 'nanrankdata']:
         index = 0
-    elif function in bn.get_functions('move', as_string=True):
+    elif function in ss.get_functions('move', as_string=True):
         index = 1
     elif function in ['partition', 'argpartition', 'push']:
         index = 2
@@ -114,7 +114,7 @@ def benchsuite(function, fraction_nan):
         repeat = instruction[-1]
         run = {}
         run['name'] = [f + signature, array]
-        run['statements'] = ["bn_fn" + signature, "sl_fn" + signature]
+        run['statements'] = ["ss_fn" + signature, "sl_fn" + signature]
         run['setup'] = setup % (f, f, f, f, f, array,
                                 fraction_nan, fraction_nan)
         run['repeat'] = repeat

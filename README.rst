@@ -4,10 +4,13 @@
 some_sums
 =========
 
-What is the fastest way to sum a N-dimensional NumPy array along a given
-axis? I don't know the answer. That's why I created `some_sums`.
+What's the fastest way to sum a N-dimensional NumPy array along a axis?
+I don't know---that's why I created `some_sums`.
 
 `some_sums` is written in C and contains many versions of the same function.
+
+Benchmark
+=========
 
 Only arrays with data type (dtype) int32, int64, float32, and float64 are
 accelerated. All other dtypes result in calls to slower, unaccelerated
@@ -19,8 +22,8 @@ Where
 =====
 
 ===================   ========================================================
- code                 http://github.com/kwgoodman/some_sums
- mailing list         http://groups.google.com/group/bottle-neck
+ code                 https://github.com/kwgoodman/some_sums
+ mailing list         https://github.com/kwgoodman/some_sums/issues
 ===================   ========================================================
 
 License

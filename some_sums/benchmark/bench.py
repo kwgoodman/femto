@@ -1,6 +1,6 @@
 
 import numpy as np
-import bottleneck as bn
+import some_sums as ss
 from .autotimeit import autotimeit
 
 __all__ = ['bench']
@@ -54,7 +54,7 @@ def bench(dtype='float64', axis=-1,
 
     # Header
     print('Bottleneck performance benchmark')
-    print("%sBottleneck %s; Numpy %s" % (tab, bn.__version__, np.__version__))
+    print("%sBottleneck %s; Numpy %s" % (tab, ss.__version__, np.__version__))
     print("%sSpeed is NumPy time divided by Bottleneck time" % tab)
     tup = (tab, dtype, axis)
     print("%sNaN means approx one-third NaNs; %s and axis=%s are used" % tup)
@@ -107,8 +107,8 @@ def benchsuite(shapes, dtype, axis, nans, order, functions):
 
     def getsetups(setup, shapes, nans, order):
         template = """import numpy as np
-        import bottleneck as bn
-        from bottleneck.benchmark.bench import getarray
+        import some_sums as ss
+        from some_sums.benchmark.bench import getarray
         a = getarray(%s, 'DTYPE', %s, '%s')
         %s"""
         setups = []
@@ -117,81 +117,21 @@ def benchsuite(shapes, dtype, axis, nans, order, functions):
         return setups
 
     # non-moving window functions
-    funcs = bn.get_functions("reduce", as_string=True)
-    funcs += ['rankdata', 'nanrankdata']
+    funcs = ss.get_functions("reduce", as_string=True)
     for func in funcs:
         if functions is not None and func not in functions:
             continue
         run = {}
         run['name'] = func
-        run['statements'] = ["bn_func(a, axis=AXIS)", "sl_func(a, axis=AXIS)"]
+        run['statements'] = ["ss_func(a, axis=AXIS)", "sl_func(a, axis=AXIS)"]
         setup = """
-            from bottleneck import %s as bn_func
+            from some_sums import %s as ss_func
             try: from numpy import %s as sl_func
-            except ImportError: from bottleneck.slow import %s as sl_func
-            if "%s" == "median": from bottleneck.slow import median as sl_func
+            except ImportError: from some_sums.slow import %s as sl_func
+            if "%s" == "median": from some_sums.slow import median as sl_func
         """ % (func, func, func, func)
         run['setups'] = getsetups(setup, shapes, nans, order)
         suite.append(run)
-
-    # partition, argpartition
-    funcs = ['partition', 'argpartition']
-    for func in funcs:
-        if functions is not None and func not in functions:
-            continue
-        run = {}
-        run['name'] = func
-        run['statements'] = ["bn_func(a, n, axis=AXIS)",
-                             "sl_func(a, n, axis=AXIS)"]
-        setup = """
-            from bottleneck import %s as bn_func
-            from bottleneck.slow import %s as sl_func
-            if AXIS is None: n = a.size
-            else: n = a.shape[AXIS] - 1
-            n = max(n / 2, 0)
-        """ % (func, func)
-        run['setups'] = getsetups(setup, shapes, nans, order)
-        suite.append(run)
-
-    # replace, push
-    funcs = ['replace', 'push']
-    for func in funcs:
-        if functions is not None and func not in functions:
-            continue
-        run = {}
-        run['name'] = func
-        if func == 'replace':
-            run['statements'] = ["bn_func(a, np.nan, 0)",
-                                 "slow_func(a, np.nan, 0)"]
-        elif func == 'push':
-            run['statements'] = ["bn_func(a, 5, axis=AXIS)",
-                                 "slow_func(a, 5, axis=AXIS)"]
-        else:
-            raise ValueError('Unknow function name')
-        setup = """
-            from bottleneck import %s as bn_func
-            from bottleneck.slow import %s as slow_func
-        """ % (func, func)
-        run['setups'] = getsetups(setup, shapes, nans, order)
-        suite.append(run)
-
-    # moving window functions
-    funcs = bn.get_functions('move', as_string=True)
-    for func in funcs:
-        if functions is not None and func not in functions:
-            continue
-        run = {}
-        run['name'] = func
-        run['statements'] = ["bn_func(a, window=w, axis=AXIS)",
-                             "sw_func(a, window=w, axis=AXIS)"]
-        setup = """
-            from bottleneck.slow.move import %s as sw_func
-            from bottleneck import %s as bn_func
-            w = a.shape[AXIS] // 5
-        """ % (func, func)
-        run['setups'] = getsetups(setup, shapes, nans, order)
-        if axis != 'None':
-            suite.append(run)
 
     # Strip leading spaces from setup code
     for i, run in enumerate(suite):
