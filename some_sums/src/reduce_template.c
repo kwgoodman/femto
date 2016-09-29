@@ -41,15 +41,15 @@
 /* low-level functions such as sum_all_float64 */
 #define REDUCE_ALL(name, dtype) \
     static PyObject * \
-    name##_all_##dtype(PyArrayObject *a, int ddof)
+    name##_all_##dtype(PyArrayObject *a)
 
 /* low-level functions such as sum_one_float64 */
 #define REDUCE_ONE(name, dtype) \
     static PyObject * \
-    name##_one_##dtype(PyArrayObject *a, int axis, int ddof)
+    name##_one_##dtype(PyArrayObject *a, int axis)
 
 /* top-level functions such as sum */
-#define REDUCE_MAIN(name, ravel, has_ddof) \
+#define REDUCE_MAIN(name) \
     static PyObject * \
     name(PyObject *self, PyObject *args, PyObject *kwds) \
     { \
@@ -63,15 +63,13 @@
                        name##_one_float64, \
                        name##_one_float32, \
                        name##_one_int64, \
-                       name##_one_int32, \
-                       ravel, \
-                       has_ddof); \
+                       name##_one_int32); \
     }
 
 /* typedefs and prototypes ----------------------------------------------- */
 
-typedef PyObject *(*fall_t)(PyArrayObject *a, int ddof);
-typedef PyObject *(*fone_t)(PyArrayObject *a, int axis, int ddof);
+typedef PyObject *(*fall_t)(PyArrayObject *a);
+typedef PyObject *(*fone_t)(PyArrayObject *a, int axis);
 
 static PyObject *
 reducer(char *name,
@@ -84,9 +82,7 @@ reducer(char *name,
         fone_t fone_float64,
         fone_t fone_float32,
         fone_t fone_int64,
-        fone_t fone_int32,
-        int ravel,
-        int has_ddof);
+        fone_t fone_int32);
 
 /* sum00 ---------------------------------------------------------------- */
 
@@ -166,20 +162,18 @@ REDUCE_ONE(sum00, DTYPE0)
 }
 /* dtype end */
 
-REDUCE_MAIN(sum00, 0, 0)
+REDUCE_MAIN(sum00)
 
 /* python strings -------------------------------------------------------- */
 
 PyObject *pystr_a = NULL;
 PyObject *pystr_axis = NULL;
-PyObject *pystr_ddof = NULL;
 
 static int
 intern_strings(void) {
     pystr_a = PyString_InternFromString("a");
     pystr_axis = PyString_InternFromString("axis");
-    pystr_ddof = PyString_InternFromString("ddof");
-    return pystr_a && pystr_axis && pystr_ddof;
+    return pystr_a && pystr_axis;
 }
 
 /* reducer --------------------------------------------------------------- */
@@ -187,10 +181,8 @@ intern_strings(void) {
 static BN_INLINE int
 parse_args(PyObject *args,
            PyObject *kwds,
-           int has_ddof,
            PyObject **a,
-           PyObject **axis,
-           PyObject **ddof)
+           PyObject **axis)
 {
     const Py_ssize_t nargs = PyTuple_GET_SIZE(args);
     const Py_ssize_t nkwds = kwds == NULL ? 0 : PyDict_Size(kwds);
@@ -198,13 +190,6 @@ parse_args(PyObject *args,
         int nkwds_found = 0;
         PyObject *tmp;
         switch (nargs) {
-            case 2:
-                if (has_ddof) {
-                    *axis = PyTuple_GET_ITEM(args, 1);
-                } else {
-                    TYPE_ERR("wrong number of arguments");
-                    return 0;
-                }
             case 1: *a = PyTuple_GET_ITEM(args, 0);
             case 0: break;
             default:
@@ -225,15 +210,6 @@ parse_args(PyObject *args,
                     *axis = tmp;
                     nkwds_found++;
                 }
-            case 2:
-                if (has_ddof) {
-                    tmp = PyDict_GetItem(kwds, pystr_ddof);
-                    if (tmp != NULL) {
-                        *ddof = tmp;
-                        nkwds_found++;
-                    }
-                    break;
-                }
                 break;
             default:
                 TYPE_ERR("wrong number of arguments");
@@ -243,20 +219,13 @@ parse_args(PyObject *args,
             TYPE_ERR("wrong number of keyword arguments");
             return 0;
         }
-        if (nargs + nkwds_found > 2 + has_ddof) {
+        if (nargs + nkwds_found > 2) {
             TYPE_ERR("too many arguments");
             return 0;
         }
     }
     else {
         switch (nargs) {
-            case 3:
-                if (has_ddof) {
-                    *ddof = PyTuple_GET_ITEM(args, 2);
-                } else {
-                    TYPE_ERR("wrong number of arguments");
-                    return 0;
-                }
             case 2:
                 *axis = PyTuple_GET_ITEM(args, 1);
             case 1:
@@ -283,26 +252,20 @@ reducer(char *name,
         fone_t fone_float64,
         fone_t fone_float32,
         fone_t fone_int64,
-        fone_t fone_int32,
-        int ravel,
-        int has_ddof)
+        fone_t fone_int32)
 {
 
     int ndim;
     int axis;
     int dtype;
-    int ddof;
     int reduce_all = 0;
 
     PyArrayObject *a;
 
     PyObject *a_obj = NULL;
     PyObject *axis_obj = Py_None;
-    PyObject *ddof_obj = NULL;
 
-    if (!parse_args(args, kwds, has_ddof, &a_obj, &axis_obj, &ddof_obj)) {
-        return NULL;
-    }
+    if (!parse_args(args, kwds, &a_obj, &axis_obj)) return NULL;
 
     /* convert to array if necessary */
     if PyArray_Check(a_obj) {
@@ -347,33 +310,21 @@ reducer(char *name,
         }
     }
 
-    /* ddof */
-    if (ddof_obj == NULL) {
-        ddof = 0;
-    }
-    else {
-        ddof = PyArray_PyIntAsInt(ddof_obj);
-        if (error_converting(ddof)) {
-            TYPE_ERR("`ddof` must be an integer");
-            return NULL;
-        }
-    }
-
     dtype = PyArray_TYPE(a);
 
     if (reduce_all == 1) {
         /* we are reducing the array along all axes */
         if (dtype == NPY_FLOAT64) {
-            return fall_float64(a, ddof);
+            return fall_float64(a);
         }
         else if (dtype == NPY_FLOAT32) {
-            return fall_float32(a, ddof);
+            return fall_float32(a);
         }
         else if (dtype == NPY_INT64) {
-            return fall_int64(a, ddof);
+            return fall_int64(a);
         }
         else if (dtype == NPY_INT32) {
-            return fall_int32(a, ddof);
+            return fall_int32(a);
         }
         else {
             return slow(name, args, kwds);
@@ -382,16 +333,16 @@ reducer(char *name,
     else {
         /* we are reducing an array with ndim > 1 over a single axis */
         if (dtype == NPY_FLOAT64) {
-            return fone_float64(a, axis, ddof);
+            return fone_float64(a, axis);
         }
         else if (dtype == NPY_FLOAT32) {
-            return fone_float32(a, axis, ddof);
+            return fone_float32(a, axis);
         }
         else if (dtype == NPY_INT64) {
-            return fone_int64(a, axis, ddof);
+            return fone_int64(a, axis);
         }
         else if (dtype == NPY_INT32) {
-            return fone_int32(a, axis, ddof);
+            return fone_int32(a, axis);
         }
         else {
             return slow(name, args, kwds);
