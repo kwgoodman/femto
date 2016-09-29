@@ -11,29 +11,13 @@ try:
                          allnan)
 except:
     pass
-try:
-    from .nonreduce import replace
-except:
-    pass
-try:
-    from .nonreduce_axis import (partition, argpartition, rankdata, nanrankdata,
-                                 push)
-except:
-    pass
-try:
-    from .move import (move_sum, move_mean, move_std, move_var, move_min,
-                       move_max, move_argmin, move_argmax, move_median,
-                       move_rank)
-except:
-    pass
-
 
 try:
     from . import slow
-    from bottleneck.version import __version__
-    from bottleneck.benchmark.bench import bench
-    from bottleneck.benchmark.bench_detailed import bench_detailed
-    from bottleneck.util import get_functions
+    from some_sums.version import __version__
+    from some_sums.benchmark.bench import bench
+    from some_sums.benchmark.bench_detailed import bench_detailed
+    from some_sums.util import get_functions
 except:
     pass
 
@@ -42,4 +26,4 @@ try:
     test = Tester().test
     del Tester
 except (ImportError, ValueError):
-    print("No Bottleneck unit testing available.")
+    print("No some_sums unit testing available.")

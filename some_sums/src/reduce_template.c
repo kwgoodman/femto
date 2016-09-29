@@ -1,4 +1,4 @@
-#include "bottleneck.h"
+#include "some_sums.h"
 #include "iterators.h"
 
 /* init macros ----------------------------------------------------------- */

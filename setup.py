@@ -14,7 +14,7 @@ from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 
 
-# workaround for installing bottleneck when numpy is not present
+# workaround for installing some_sums when numpy is not present
 # taken from:
 # stackoverflow.com/questions/19919905/
 # how-to-bootstrap-numpy-installation-in-setup-py#21621689
@@ -28,28 +28,12 @@ class build_ext(_build_ext):
 
 
 def prepare_modules():
-
-    from bottleneck.src.template import make_c_files
-
+    from some_sums.src.template import make_c_files
     make_c_files()
-    ext = [Extension("bottleneck.reduce",
-                     sources=["bottleneck/src/reduce.c"],
+    ext = [Extension("some_sums.reduce",
+                     sources=["some_sums/src/reduce.c"],
                      include_dirs=[],
                      extra_compile_args=['-O2'])]
-    ext += [Extension("bottleneck.move",
-                      sources=["bottleneck/src/move.c",
-                               "bottleneck/src/move_median/move_median.c"],
-                      include_dirs=[],
-                      extra_compile_args=['-O2'])]
-    ext += [Extension("bottleneck.nonreduce",
-                      sources=["bottleneck/src/nonreduce.c"],
-                      include_dirs=[],
-                      extra_compile_args=['-O2'])]
-    ext += [Extension("bottleneck.nonreduce_axis",
-                      sources=["bottleneck/src/nonreduce_axis.c"],
-                      include_dirs=[],
-                      extra_compile_args=['-O2'])]
-
     return ext
 
 
@@ -62,7 +46,7 @@ def get_long_description():
 
 
 def get_version_str():
-    ver_file = os.path.join('bottleneck', 'version.py')
+    ver_file = os.path.join('some_sums', 'version.py')
     with open(ver_file, 'r') as fid:
         version = fid.read()
     version = version.split("= ")
@@ -87,14 +71,14 @@ metadata = dict(name='Bottleneck',
                 maintainer_email="bottle-neck@googlegroups.com",
                 description="Fast NumPy array functions written in C",
                 long_description=get_long_description(),
-                url="https://github.com/kwgoodman/bottleneck",
+                url="https://github.com/kwgoodman/some_sums",
                 download_url="http://pypi.python.org/pypi/Bottleneck",
                 license="Simplified BSD",
                 classifiers=CLASSIFIERS,
                 platforms="OS Independent",
                 version=get_version_str(),
                 packages=find_packages(),
-                package_data={'bottleneck': ['LICENSE']},
+                package_data={'some_sums': ['LICENSE']},
                 requires=['numpy'],
                 install_requires=['numpy'],
                 cmdclass={'build_ext': build_ext},
@@ -104,7 +88,7 @@ metadata = dict(name='Bottleneck',
 if not(len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
        sys.argv[1] in ('--help-commands', 'egg_info', '--version', 'clean',
                        'build_sphinx'))):
-    # build bottleneck
+    # build some_sums
     metadata['ext_modules'] = prepare_modules()
 elif sys.argv[1] == 'build_sphinx':
     # create intro.rst (from readme file) for sphinx manual

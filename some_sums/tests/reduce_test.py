@@ -8,7 +8,7 @@ import numpy as np
 from numpy.testing import (assert_equal, assert_raises,
                            assert_array_almost_equal)
 
-import bottleneck as bn
+import some_sums as bn
 
 DTYPES = [np.float64, np.float32, np.int64, np.int32]
 

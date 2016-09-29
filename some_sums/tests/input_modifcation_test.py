@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 from numpy.testing import assert_equal
-import bottleneck as bn
+import some_sums as bn
 
 DTYPES = [np.float64, np.float32, np.int64, np.int32]
 nan = np.nan

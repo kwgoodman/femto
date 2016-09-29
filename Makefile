@@ -2,7 +2,7 @@
 
 PYTHON=python
 
-srcdir := bottleneck/
+srcdir := some_sums/
 
 help:
 	@echo "Available tasks:"
@@ -24,7 +24,7 @@ build:
 	${PYTHON} setup.py build_ext --inplace
 
 test:
-	${PYTHON} -c "import bottleneck;bottleneck.test()"
+	${PYTHON} -c "import some_sums;some_sums.test()"
 
 flake8:
 	flake8 --exclude=doc .
@@ -33,10 +33,10 @@ readme:
 	PYTHONPATH=`pwd`:PYTHONPATH ${PYTHON} tools/update_readme.py
 
 bench:
-	${PYTHON} -c "import bottleneck; bottleneck.bench()"
+	${PYTHON} -c "import some_sums; some_sums.bench()"
 
 detail:
-	${PYTHON} -c "import bottleneck; bottleneck.bench_detailed('all')"
+	${PYTHON} -c "import some_sums; some_sums.bench_detailed('all')"
 
 sdist:
 	rm -f MANIFEST
