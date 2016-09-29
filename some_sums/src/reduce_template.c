@@ -38,17 +38,17 @@
 
 /* function signatures --------------------------------------------------- */
 
-/* low-level functions such as nansum_all_float64 */
+/* low-level functions such as sum_all_float64 */
 #define REDUCE_ALL(name, dtype) \
     static PyObject * \
     name##_all_##dtype(PyArrayObject *a, int ddof)
 
-/* low-level functions such as nansum_one_float64 */
+/* low-level functions such as sum_one_float64 */
 #define REDUCE_ONE(name, dtype) \
     static PyObject * \
     name##_one_##dtype(PyArrayObject *a, int axis, int ddof)
 
-/* top-level functions such as nansum */
+/* top-level functions such as sum */
 #define REDUCE_MAIN(name, ravel, has_ddof) \
     static PyObject * \
     name(PyObject *self, PyObject *args, PyObject *kwds) \
@@ -88,10 +88,10 @@ reducer(char *name,
         int ravel,
         int has_ddof);
 
-/* nansum ---------------------------------------------------------------- */
+/* sum00 ---------------------------------------------------------------- */
 
 /* dtype = [['float64'], ['float32']] */
-REDUCE_ALL(nansum, DTYPE0)
+REDUCE_ALL(sum00, DTYPE0)
 {
     npy_DTYPE0 ai, asum = 0;
     INIT_ALL
@@ -107,7 +107,7 @@ REDUCE_ALL(nansum, DTYPE0)
     return PyFloat_FromDouble(asum);
 }
 
-REDUCE_ONE(nansum, DTYPE0)
+REDUCE_ONE(sum00, DTYPE0)
 {
     npy_DTYPE0 ai, asum;
     INIT_ONE(DTYPE0, DTYPE0)
@@ -132,7 +132,7 @@ REDUCE_ONE(nansum, DTYPE0)
 /* dtype end */
 
 /* dtype = [['int64'], ['int32']] */
-REDUCE_ALL(nansum, DTYPE0)
+REDUCE_ALL(sum00, DTYPE0)
 {
     npy_DTYPE0 asum = 0;
     INIT_ALL
@@ -145,7 +145,7 @@ REDUCE_ALL(nansum, DTYPE0)
     return PyInt_FromLong(asum);
 }
 
-REDUCE_ONE(nansum, DTYPE0)
+REDUCE_ONE(sum00, DTYPE0)
 {
     npy_DTYPE0 asum;
     INIT_ONE(DTYPE0, DTYPE0)
@@ -166,7 +166,7 @@ REDUCE_ONE(nansum, DTYPE0)
 }
 /* dtype end */
 
-REDUCE_MAIN(nansum, 0, 0)
+REDUCE_MAIN(sum00, 0, 0)
 
 /* python strings -------------------------------------------------------- */
 
@@ -405,11 +405,11 @@ reducer(char *name,
 
 static char reduce_doc[] = "some_sums's some sums.";
 
-static char nansum_doc[] =
+static char sum_doc[] =
 /* MULTILINE STRING BEGIN
-nansum(a, axis=None)
+sum(a, axis=None)
 
-Sum of array elements along given axis treating NaNs as zero.
+Sum of array elements along given axis.
 
 The data type (dtype) of the output is the same as the input. On 64-bit
 operating systems, 32-bit input is NOT upcast to 64-bit accumulator and
@@ -440,26 +440,17 @@ the result is Not A Number (NaN).
 
 Examples
 --------
->>> ss.nansum(1)
+>>> ss.sum(1)
 1
->>> ss.nansum([1])
+>>> ss.sum([1])
 1
->>> ss.nansum([1, np.nan])
-1.0
->>> a = np.array([[1, 1], [1, np.nan]])
->>> ss.nansum(a)
-3.0
->>> ss.nansum(a, axis=0)
-array([ 2.,  1.])
-
-When positive infinity and negative infinity are present:
-
->>> ss.nansum([1, np.nan, np.inf])
-inf
->>> ss.nansum([1, np.nan, np.NINF])
--inf
->>> ss.nansum([1, np.nan, np.inf, np.NINF])
-nan
+>>> ss.sum([1, 4])
+5
+>>> a = np.array([[1, 2], [3, 4]])
+>>> ss.sum(a)
+10
+>>> ss.sum(a, axis=0)
+array([ 4,  6])
 
 MULTILINE STRING END */
 
@@ -467,7 +458,7 @@ MULTILINE STRING END */
 
 static PyMethodDef
 reduce_methods[] = {
-    {"nansum",    (PyCFunction)nansum,    VARKEY, nansum_doc},
+    {"sum00",    (PyCFunction)sum00,    VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 

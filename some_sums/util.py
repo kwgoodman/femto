@@ -18,6 +18,6 @@ def get_functions(module_name, as_string=False):
 
 def func_dict():
     d = {}
-    d['reduce'] = [ss.nansum,
+    d['reduce'] = [ss.sum00,
                    ]
     return d

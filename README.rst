@@ -4,8 +4,8 @@
 some_sums
 =========
 
-What's the fastest way to sum a N-dimensional NumPy array along a axis?
-I don't know---that's why I created `some_sums`.
+What's the fastest way to sum a N-dimensional NumPy array along an axis?
+I don't know---that's why I created *some_sums*.
 
 `some_sums` is written in C and contains many versions of the same function.
 
