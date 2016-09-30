@@ -12,11 +12,18 @@ I don't know---that's why I created *some_sums*.
 Benchmark
 =========
 
-Only arrays with data type (dtype) int32, int64, float32, and float64 are
-accelerated. All other dtypes result in calls to slower, unaccelerated
-functions. In the rare case of a byte-swapped input array (e.g. a big-endian
-array on a little-endian operating system) the function will not be
-accelerated regardless of dtype.
+Some_sums comes with a benchmark suite::
+
+    >>> ss.bench()
+    Some_sums performance benchmark
+        some_sums 0.0.1dev; Numpy 1.11.0
+        Speed is a.sum(axis) time divided by ss.sumXX(a, axis) time
+        dtype = float64
+
+                     no NaN     no NaN     no NaN
+                       (100,)  (1000,1000)(1000,1000)
+                       axis=0     axis=0     axis=1
+        sum00          18.9        0.2        0.5
 
 Where
 =====
