@@ -23,7 +23,8 @@ Some_sums comes with a benchmark suite::
                      no NaN     no NaN     no NaN
                        (100,)  (1000,1000)(1000,1000)
                        axis=0     axis=0     axis=1
-        sum00          18.9        0.2        0.5
+        sum00          18.5        0.1        0.5
+        sum01          18.8        0.1        0.5
 
 Where
 =====

@@ -6,7 +6,7 @@
 # rebuild using the templates. So try to import the compiled some_sums
 # functions to the top level, but move on if not successful.
 try:
-    from .reduce import sum00
+    from .reduce import sum00, sum01
 except:
     pass
 

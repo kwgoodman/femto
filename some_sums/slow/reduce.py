@@ -1,6 +1,6 @@
 import numpy as np
 
-__all__ = ['sum00']
+__all__ = ['sum00', 'sum01']
 
 
 def _sum(a, axis=None):
@@ -12,3 +12,4 @@ def _sum(a, axis=None):
     return y
 
 sum00 = _sum
+sum01 = _sum

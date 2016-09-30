@@ -18,6 +18,8 @@ def get_functions(module_name, as_string=False):
 
 def func_dict():
     d = {}
-    d['reduce'] = [ss.sum00,
+    d['reduce'] = [
+                   ss.sum00,
+                   ss.sum01,
                    ]
     return d
