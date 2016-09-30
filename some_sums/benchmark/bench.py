@@ -6,9 +6,9 @@ from .autotimeit import autotimeit
 __all__ = ['bench']
 
 
-def bench(dtype='float64', axis=-1,
-          shapes=[(10,), (1000, 1000), (10,), (1000, 1000)],
-          nans=[False, False, True, True],
+def bench(dtype='float64', axes=[0, 0, 1],
+          shapes=[(100,), (1000, 1000), (1000, 1000)],
+          nans=[False, False, False],
           order='C',
           functions=None):
     """
@@ -18,9 +18,9 @@ def bench(dtype='float64', axis=-1,
     ----------
     dtype : str, optional
         Data type string such as 'float64', which is the default.
-    axis : int, optional
-        Axis along which to perform the calculations that are being
-        benchmarked. The default is the last axis (axis=-1).
+    axes : list, optional
+        List of Axes along which to perform the calculations that are being
+        benchmarked.
     shapes : list, optional
         A list of tuple shapes of input arrays to use in the benchmark.
     nans : list, optional
@@ -30,13 +30,10 @@ def bench(dtype='float64', axis=-1,
     order : {'C', 'F'}, optional
         Whether to store multidimensional data in C- or Fortran-contiguous
         (row- or column-wise) order in memory.
-        functions : {list, None}, optional
+    functions : {list, None}, optional
         A list of strings specifying which functions to include in the
         benchmark. By default (None) all functions are included in the
         benchmark.
-    functions : {list, None}, optional
-        A list of function names (strings) to benchmark. By default (None)
-        all functions are benchmarked.
 
     Returns
     -------
@@ -46,18 +43,19 @@ def bench(dtype='float64', axis=-1,
 
     if len(shapes) != len(nans):
         raise ValueError("`shapes` and `nans` must have the same length")
+    if len(shapes) != len(axes):
+        raise ValueError("`shapes` and `axes` must have the same length")
 
     dtype = str(dtype)
-    axis = str(axis)
 
     tab = '    '
 
     # Header
-    print('Bottleneck performance benchmark')
-    print("%sBottleneck %s; Numpy %s" % (tab, ss.__version__, np.__version__))
-    print("%sSpeed is NumPy time divided by Bottleneck time" % tab)
-    tup = (tab, dtype, axis)
-    print("%sNaN means approx one-third NaNs; %s and axis=%s are used" % tup)
+    print('some_sums performance benchmark')
+    print("%ssome_sums %s; Numpy %s" % (tab, ss.__version__, np.__version__))
+    print("%sSpeed is a.sum(axis) time divided by ss.sumXX(a, axis) time"
+          % tab)
+    print("%sdtype = %s" % (tab, dtype))
 
     print('')
     header = [" "*14]
@@ -70,8 +68,12 @@ def bench(dtype='float64', axis=-1,
     header = ["".join(str(shape).split(" ")).center(11) for shape in shapes]
     header = [" "*16] + header
     print("".join(header))
+    header = ["".join(("axis=" + str(axis)).split(" ")).center(11)
+              for axis in axes]
+    header = [" "*16] + header
+    print("".join(header))
 
-    suite = benchsuite(shapes, dtype, axis, nans, order, functions)
+    suite = benchsuite(shapes, dtype, axes, nans, order, functions)
     for test in suite:
         name = test["name"].ljust(12)
         fmt = tab + name + "%7.1f" + "%11.1f"*(len(shapes) - 1)
@@ -85,8 +87,8 @@ def timer(statements, setups):
         raise ValueError("Two statements needed.")
     for setup in setups:
         with np.errstate(invalid='ignore'):
-            t0 = autotimeit(statements[0], setup)
-            t1 = autotimeit(statements[1], setup)
+            t0 = autotimeit(statements[0], setup, repeat=4)
+            t1 = autotimeit(statements[1], setup, repeat=4)
         speed.append(t1 / t0)
     return speed
 
@@ -101,19 +103,20 @@ def getarray(shape, dtype, nans=False, order='C'):
     return np.array(a.reshape(*shape), order=order)
 
 
-def benchsuite(shapes, dtype, axis, nans, order, functions):
+def benchsuite(shapes, dtype, axes, nans, order, functions):
 
     suite = []
 
-    def getsetups(setup, shapes, nans, order):
-        template = """import numpy as np
-        import some_sums as ss
+    def getsetups(setup, shapes, nans, axes, order):
+        template = """
         from some_sums.benchmark.bench import getarray
         a = getarray(%s, 'DTYPE', %s, '%s')
+        axis=%s
         %s"""
         setups = []
-        for shape, nan in zip(shapes, nans):
-            setups.append(template % (str(shape), str(nan), order, setup))
+        for shape, nan, axis in zip(shapes, nans, axes):
+            setups.append(template % (str(shape), str(nan),
+                          order, str(axis), setup))
         return setups
 
     # non-moving window functions
@@ -123,14 +126,9 @@ def benchsuite(shapes, dtype, axis, nans, order, functions):
             continue
         run = {}
         run['name'] = func
-        run['statements'] = ["ss_func(a, axis=AXIS)", "sl_func(a, axis=AXIS)"]
-        setup = """
-            from some_sums import %s as ss_func
-            try: from numpy import %s as sl_func
-            except ImportError: from some_sums.slow import %s as sl_func
-            if "%s" == "median": from some_sums.slow import median as sl_func
-        """ % (func, func, func, func)
-        run['setups'] = getsetups(setup, shapes, nans, order)
+        run['statements'] = ["func(a, axis)", "a.sum(axis)"]
+        setup = "from some_sums import %s as func" % func
+        run['setups'] = getsetups(setup, shapes, nans, axes, order)
         suite.append(run)
 
     # Strip leading spaces from setup code
@@ -140,20 +138,18 @@ def benchsuite(shapes, dtype, axis, nans, order, functions):
             t = '\n'.join([z.strip() for z in t.split('\n')])
             suite[i]['setups'][j] = t
 
-    # Set dtype and axis in setups
+    # Set dtype in setups
     for i, run in enumerate(suite):
         for j in range(len(run['setups'])):
             t = run['setups'][j]
             t = t.replace('DTYPE', dtype)
-            t = t.replace('AXIS', axis)
             suite[i]['setups'][j] = t
 
-    # Set dtype and axis in statements
+    # Set dtype in statements
     for i, run in enumerate(suite):
         for j in range(2):
             t = run['statements'][j]
             t = t.replace('DTYPE', dtype)
-            t = t.replace('AXIS', axis)
             suite[i]['statements'][j] = t
 
     return suite
