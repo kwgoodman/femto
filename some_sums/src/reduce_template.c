@@ -152,7 +152,7 @@ REDUCE_ONE(sum01, DTYPE0)
         }
         else {
             Py_ssize_t i;
-            Py_ssize_t repeat = (LENGTH - LENGTH % 4) / 4;
+            Py_ssize_t repeat = LENGTH - LENGTH % 4;
             npy_DTYPE0 asums[4];
             WHILE {
                 asums[0] = asums[1] = asums[2] = asums[3] = 0;

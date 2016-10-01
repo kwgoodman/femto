@@ -67,5 +67,5 @@ After you have installed `some_sums`, run the suite of unit tests::
     >>> import some_sums as ss
     >>> ss.test()
     <snip>
-    Ran 7 tests in 0.335s
+    Ran 14 tests in 0.635s
     OK
