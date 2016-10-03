@@ -177,6 +177,63 @@ REDUCE_ONE(sum01, DTYPE0)
 REDUCE_MAIN(sum01)
 
 
+/* sum02 ----------------------------------------------------------------- */
+
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE_ALL(sum02, DTYPE0)
+{
+    npy_DTYPE0 asum = 0;
+    INIT_ALL
+    WHILE {
+        FOR asum += AI(DTYPE0);
+        NEXT
+    }
+    return PyFloat_FromDouble(asum);
+}
+
+REDUCE_ONE(sum02, DTYPE0)
+{
+    npy_DTYPE0 asum;
+    INIT_ONE(DTYPE0, DTYPE0)
+    if (LENGTH == 0) {
+        FILL_Y(0)
+    }
+    else {
+        if (LENGTH < 8) {
+            WHILE {
+                asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
+            }
+        }
+        else {
+            Py_ssize_t i;
+            Py_ssize_t repeat = LENGTH - LENGTH % 8;
+            npy_DTYPE0 asums[4];
+            WHILE {
+                asums[0] = asums[1] = asums[2] = asums[3] = 0;
+                for (i = 0; i < repeat; i += 8) {
+                    asums[0] += AX(DTYPE0, i + 0) + AX(DTYPE0, i + 1);
+                    asums[1] += AX(DTYPE0, i + 2) + AX(DTYPE0, i + 3);
+                    asums[2] += AX(DTYPE0, i + 4) + AX(DTYPE0, i + 5);
+                    asums[3] += AX(DTYPE0, i + 6) + AX(DTYPE0, i + 7);
+                }
+                for (i = i; i < LENGTH; i++) {
+                    asums[0] += AX(DTYPE0, i);
+                }
+                YPP = asums[0] + asums[1] + asums[2] + asums[3];
+                NEXT
+            }
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+REDUCE_MAIN(sum02)
+
+
 /* python strings -------------------------------------------------------- */
 
 PyObject *pystr_a = NULL;
@@ -424,6 +481,7 @@ static PyMethodDef
 reduce_methods[] = {
     {"sum00", (PyCFunction)sum00, VARKEY, sum_doc},
     {"sum01", (PyCFunction)sum01, VARKEY, sum_doc},
+    {"sum02", (PyCFunction)sum02, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 

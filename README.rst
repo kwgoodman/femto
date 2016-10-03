@@ -23,8 +23,9 @@ Some_sums comes with a benchmark suite::
                      no NaN     no NaN     no NaN
                        (100,)  (1000,1000)(1000,1000)
                        axis=0     axis=0     axis=1
-        sum00          18.5        0.1        0.5
-        sum01          18.8        0.1        0.5
+        sum00         20.88       0.34       0.46
+        sum01         19.99       0.47       1.13
+        sum02         19.51       0.48       1.08
 
 Where
 =====
@@ -67,5 +68,5 @@ After you have installed `some_sums`, run the suite of unit tests::
     >>> import some_sums as ss
     >>> ss.test()
     <snip>
-    Ran 14 tests in 0.635s
+    Ran 24 tests in 0.635s
     OK

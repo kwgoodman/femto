@@ -1,7 +1,5 @@
 import numpy as np
 
-__all__ = ['sum00', 'sum01']
-
 
 def _sum(a, axis=None):
     "Slow nansum function used for unaccelerated dtype."
@@ -13,3 +11,4 @@ def _sum(a, axis=None):
 
 sum00 = _sum
 sum01 = _sum
+sum02 = _sum

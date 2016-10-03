@@ -21,5 +21,6 @@ def func_dict():
     d['reduce'] = [
                    ss.sum00,
                    ss.sum01,
+                   ss.sum02,
                    ]
     return d

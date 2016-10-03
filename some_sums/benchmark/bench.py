@@ -76,7 +76,7 @@ def bench(dtype='float64', axes=[0, 0, 1],
     suite = benchsuite(shapes, dtype, axes, nans, order, functions)
     for test in suite:
         name = test["name"].ljust(12)
-        fmt = tab + name + "%7.1f" + "%11.1f"*(len(shapes) - 1)
+        fmt = tab + name + "%7.2f" + "%11.2f"*(len(shapes) - 1)
         speed = timer(test['statements'], test['setups'])
         print(fmt % tuple(speed))
 
