@@ -32,22 +32,15 @@ If you have ideas on how to speed up the `code`_ then `share them`_.
 License
 =======
 
-some_sums is distributed under the GPL v3. See the LICENSE file for details.
+some_sums is distributed under the GPL v3+. See the LICENSE file for details.
 
-Install
-=======
+Requirements
+============
 
-Requirements:
-
-======================== ====================================================
-some_sums                Python 2.7, 3.4, 3.5; NumPy 1.11.0
-Compile                  gcc or clang
-Unit tests               nose
-======================== ====================================================
-
-To install some_sums on GNU/Linux, Mac OS X, et al.::
-
-    $ sudo python setup.py install
+- Python 2.7, 3.4, 3.5
+- NumPy 1.11
+- gcc or clang
+- nose
 
 .. _bottleneck: https://github.com/kwgoodman/bottleneck
 .. _code: https://github.com/kwgoodman/some_sums
