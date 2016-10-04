@@ -20,7 +20,7 @@ def update_readme():
     readme_list = [r.strip('\n') for r in readme_list]
 
     # remove old benchmark result from readme
-    idx1 = readme_list.index('    Some_sums performance benchmark')
+    idx1 = readme_list.index('    some_sums performance benchmark')
     idx2 = [i for i, line in enumerate(readme_list) if line == '']
     idx2 = [i for i in idx2 if i > idx1]
     idx2 = idx2[1]

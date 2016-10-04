@@ -51,7 +51,7 @@ def bench(dtype='float64', axes=[0, 1],
     tab = '    '
 
     # Header
-    print('Some_sums performance benchmark')
+    print('some_sums performance benchmark')
     print("%ssome_sums %s; Numpy %s" % (tab, ss.__version__, np.__version__))
     print("%sSpeed is a.sum(axis) time divided by ss.sumXX(a, axis) time"
           % tab)
