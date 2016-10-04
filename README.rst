@@ -27,7 +27,7 @@ suite::
         sum01          0.48       1.13
         sum02          0.46       1.07
 
-If you have ideas on how to speed up the `code`_ then `share them`_.
+If you have ideas on how to speed up the `code`_ then `share`_ them.
 
 License
 =======
@@ -44,4 +44,4 @@ Requirements
 
 .. _bottleneck: https://github.com/kwgoodman/bottleneck
 .. _code: https://github.com/kwgoodman/some_sums
-.. _share them: https://github.com/kwgoodman/some_sums/issues
+.. _share: https://github.com/kwgoodman/some_sums/issues

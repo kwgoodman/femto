@@ -273,7 +273,7 @@ reducer(char *name,
     PyArrayObject *a;
 
     PyObject *a_obj = NULL;
-    PyObject *axis_obj = Py_None;
+    PyObject *axis_obj = NULL;
 
     if (!parse_args(args, kwds, &a_obj, &axis_obj)) return NULL;
 
@@ -296,6 +296,14 @@ reducer(char *name,
     if (axis_obj == Py_None) {
         VALUE_ERR("`axis` cannot be None");
         return NULL;
+    }
+    else if (axis_obj == NULL) {
+        ndim = PyArray_NDIM(a);
+        if (ndim < 2) {
+            VALUE_ERR("ndim must be > 1");
+            return NULL;
+        }
+        axis = PyArray_NDIM(a) - 1;
     }
     else {
         axis = PyArray_PyIntAsInt(axis_obj);
@@ -349,9 +357,9 @@ static char reduce_doc[] = "some_sums's some sums.";
 
 static char sum_doc[] =
 /* MULTILINE STRING BEGIN
-sum(a, axis=None)
+sum(a, axis=-1)
 
-Sum of array elements along given axis.
+Sum of array elements along given axis. a.dim must be greater than 1.
 
 The data type (dtype) of the output is the same as the input. On 64-bit
 operating systems, 32-bit input is NOT upcast to 64-bit accumulator and
@@ -362,15 +370,14 @@ Parameters
 a : array_like
     Array containing numbers whose sum is desired. If `a` is not an
     array, a conversion is attempted.
-axis : {int, None}, optional
-    Axis along which the sum is computed. The default (axis=None) is to
-    compute the sum of the flattened array.
+axis : int, optional
+    Axis along which the sum is computed. The default (axis=-1) is to
+    compute the sum along the last axis.
 
 Returns
 -------
 y : ndarray
     An array with the same shape as `a`, with the specified axis removed.
-    If `a` is a 0-d array, or if axis is None, a scalar is returned.
 
 Notes
 -----
@@ -382,15 +389,8 @@ the result is Not A Number (NaN).
 
 Examples
 --------
->>> ss.sum(1)
-1
->>> ss.sum([1])
-1
->>> ss.sum([1, 4])
-5
+
 >>> a = np.array([[1, 2], [3, 4]])
->>> ss.sum(a)
-10
 >>> ss.sum(a, axis=0)
 array([ 4,  6])
 
