@@ -3,12 +3,6 @@
 import os
 import sys
 
-try:
-    import setuptools  # noqa
-except ImportError:
-    from ez_setup import use_setuptools
-    use_setuptools()
-
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext as _build_ext
@@ -71,10 +65,9 @@ CLASSIFIERS = [
 metadata = dict(name='some_sums',
                 maintainer="Keith Goodman",
                 maintainer_email="bottle-neck@googlegroups.com",
-                description="Fast NumPy array functions written in C",
+                description="What's the fastest way to sum a NumPy array?",
                 long_description=get_long_description(),
                 url="https://github.com/kwgoodman/some_sums",
-                download_url="http://pypi.python.org/pypi/some_sums",
                 license="GNU GPLv3+",
                 classifiers=CLASSIFIERS,
                 platforms="OS Independent",
@@ -92,12 +85,5 @@ if not(len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
                        'build_sphinx'))):
     # build some_sums
     metadata['ext_modules'] = prepare_modules()
-elif sys.argv[1] == 'build_sphinx':
-    # create intro.rst (from readme file) for sphinx manual
-    readme = 'README.rst'
-    intro = os.path.join('doc', 'source', 'intro.rst')
-    with open(readme, 'r') as infile, open(intro, 'w') as outfile:
-        txt = infile.readlines()[2:]  # skip travis build status
-        outfile.write(''.join(txt))
 
 setup(**metadata)

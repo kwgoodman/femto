@@ -14,7 +14,6 @@ try:
     from . import slow
     from some_sums.version import __version__
     from some_sums.benchmark.bench import bench
-    from some_sums.benchmark.bench_detailed import bench_detailed
     from some_sums.util import get_functions
 except:
     pass

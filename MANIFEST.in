@@ -1,4 +1,4 @@
-include README.rst RELEASE.rst
+include README.rst
 include LICENSE some_sums/LICENSE
 include Makefile tox.ini
 
