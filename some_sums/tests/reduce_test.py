@@ -5,8 +5,7 @@ import traceback
 
 from nose.tools import ok_
 import numpy as np
-from numpy.testing import (assert_equal, assert_raises,
-                           assert_array_almost_equal)
+from numpy.testing import assert_equal, assert_array_almost_equal
 
 import some_sums as ss
 
@@ -25,43 +24,12 @@ def arrays(dtypes, name):
     # nan and inf
     nan = np.nan
     inf = np.inf
-    yield np.array([inf, nan])
-    yield np.array([inf, -inf])
-    # yield np.array([nan, inf])  np.nanargmin can't handle this one
-
-    # byte swapped
-    yield np.array([1, 2, 3], dtype='>f4')
-    yield np.array([1, 2, 3], dtype='<f4')
-
-    # make sure slow is called
-    yield np.array([1, 2, 3], dtype=np.float16)
-
-    # regression tests
-    yield np.array([0, 0, 0])  # nanargmax/nanargmin
-    yield np.array([1, nan, nan, 2])  # nanmedian
-
-    # ties
-    yield np.array([0, 0, 0], dtype=np.float64)
-    yield np.array([1, 1, 1], dtype=np.float64)
-
-    # 0d input
-    yield np.array(-9)
-    yield np.array(0)
-    yield np.array(9)
-    yield np.array(-9.0)
-    yield np.array(0.0)
-    yield np.array(9.0)
-    yield np.array(-inf)
-    yield np.array(inf)
-    yield np.array(nan)
 
     # Automate a bunch of arrays to test
     ss = {}
-    ss[0] = {'size':  0, 'shapes': [(0,), (0, 0), (2, 0), (2, 0, 1)]}
-    ss[1] = {'size':  8, 'shapes': [(8,)]}
-    ss[2] = {'size': 12, 'shapes': [(2, 6), (3, 4)]}
-    ss[3] = {'size': 16, 'shapes': [(2, 2, 4)]}
-    ss[4] = {'size': 24, 'shapes': [(1, 2, 3, 4)]}
+    ss[0] = {'size': 12, 'shapes': [(2, 6), (3, 4)]}
+    ss[1] = {'size': 16, 'shapes': [(2, 2, 4)]}
+    ss[2] = {'size': 24, 'shapes': [(1, 2, 3, 4)]}
     for seed in (1, 2):
         rs = np.random.RandomState(seed)
         for ndim in ss:
@@ -90,10 +58,7 @@ def unit_maker(func, decimal=5):
     name = func.__name__
     func0 = eval('ss.slow.%s' % name)
     for i, a in enumerate(arrays(DTYPES, name)):
-        if a.ndim == 0:
-            axes = [None]  # numpy can't handle e.g. np.nanmean(9, axis=-1)
-        else:
-            axes = list(range(-1, a.ndim)) + [None]
+        axes = range(-1, a.ndim)
         for axis in axes:
             actual = 'Crashed'
             desired = 'Crashed'
@@ -144,13 +109,6 @@ def test_strides():
 def arrays_strides(dtypes=DTYPES):
     "Iterator that yields non-C orders arrays."
 
-    # 1d
-    for dtype in dtypes:
-        a = np.arange(12).astype(dtype)
-        for start in range(3):
-            for step in range(1, 3):
-                yield a[start::step]  # don't use astype here; copy created
-
     # 2d
     for dtype in dtypes:
         a = np.arange(12).reshape(4, 3).astype(dtype)
@@ -179,10 +137,7 @@ def unit_maker_strides(func, decimal=5):
     name = func.__name__
     func0 = eval('ss.slow.%s' % name)
     for i, a in enumerate(arrays_strides()):
-        if a.ndim == 0:
-            axes = [None]  # numpy can't handle e.g. np.nanmean(9, axis=-1)
-        else:
-            axes = list(range(-1, a.ndim)) + [None]
+        axes = range(-1, a.ndim)
         for axis in axes:
             # do not use a.copy() here because it will C order the array
             actual = func(a, axis=axis)
@@ -192,84 +147,6 @@ def unit_maker_strides(func, decimal=5):
             err_msg = fmt % tup
             assert_array_almost_equal(actual, desired, decimal, err_msg)
             err_msg += '\n dtype mismatch %s %s'
-
-
-# ---------------------------------------------------------------------------
-# Test argument parsing
-
-def test_arg_parsing():
-    "test argument parsing"
-    for func in ss.get_functions('reduce'):
-        yield unit_maker_argparse, func
-
-
-def unit_maker_argparse(func, decimal=5):
-    "test argument parsing."
-
-    name = func.__name__
-    func0 = eval('ss.slow.%s' % name)
-
-    a = np.array([1., 2, 3])
-
-    fmt = '\n%s' % func
-    fmt += '%s\n'
-    fmt += '\nInput array:\n%s\n' % a
-
-    actual = func(a)
-    desired = func0(a)
-    err_msg = fmt % "(a)"
-    assert_array_almost_equal(actual, desired, decimal, err_msg)
-
-    actual = func(a, 0)
-    desired = func0(a, 0)
-    err_msg = fmt % "(a, 0)"
-    assert_array_almost_equal(actual, desired, decimal, err_msg)
-
-    actual = func(a, None)
-    desired = func0(a, None)
-    err_msg = fmt % "(a, None)"
-    assert_array_almost_equal(actual, desired, decimal, err_msg)
-
-    actual = func(a, axis=0)
-    desired = func0(a, axis=0)
-    err_msg = fmt % "(a, axis=0)"
-    assert_array_almost_equal(actual, desired, decimal, err_msg)
-
-    actual = func(a, axis=None)
-    desired = func0(a, axis=None)
-    err_msg = fmt % "(a, axis=None)"
-    assert_array_almost_equal(actual, desired, decimal, err_msg)
-
-    actual = func(a=a)
-    desired = func0(a=a)
-    err_msg = fmt % "(a)"
-    assert_array_almost_equal(actual, desired, decimal, err_msg)
-
-    # regression test: make sure len(kwargs) == 0 doesn't raise
-    args = (a, 0)
-    kwargs = {}
-    func(*args, **kwargs)
-
-
-def test_arg_parse_raises():
-    "test argument parsing raises in reduce"
-    for func in ss.get_functions('reduce'):
-        yield unit_maker_argparse_raises, func
-
-
-def unit_maker_argparse_raises(func):
-    "test argument parsing raises in reduce"
-    a = np.array([1., 2, 3])
-    assert_raises(TypeError, func)
-    assert_raises(TypeError, func, axis=a)
-    assert_raises(TypeError, func, a, axis=0, extra=0)
-    assert_raises(TypeError, func, a, axis=0, a=a)
-    assert_raises(TypeError, func, a, 0, 0, 0, 0, 0)
-    assert_raises(TypeError, func, a, axis='0')
-    if func.__name__ not in ('nanstd', 'nanvar'):
-        assert_raises(TypeError, func, a, ddof=0)
-    assert_raises(TypeError, func, a, a)
-    # assert_raises(TypeError, func, None) results vary
 
 
 # ---------------------------------------------------------------------------
@@ -284,7 +161,7 @@ def test_unrolling():
 
 def unroll_arrays(dtypes, name):
     "Iterator that yields arrays to use for unit testing."
-    for ndim in (1, 2):
+    for ndim in (2,):
         rs = np.random.RandomState(ndim)
         for length in range(20):
             for dtype in dtypes:
@@ -303,10 +180,7 @@ def unit_maker_unroll(func, decimal=5):
     name = func.__name__
     func0 = eval('ss.slow.%s' % name)
     for i, a in enumerate(unroll_arrays(DTYPES, name)):
-        if a.ndim == 0:
-            axes = [None]  # numpy can't handle e.g. np.nanmean(9, axis=-1)
-        else:
-            axes = list(range(-1, a.ndim)) + [None]
+        axes = range(-1, a.ndim)
         for axis in axes:
             actual = 'Crashed'
             desired = 'Crashed'

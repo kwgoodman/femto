@@ -20,33 +20,20 @@
 
 /* init macros ----------------------------------------------------------- */
 
-#define INIT_ALL \
-    iter it; \
-    init_iter_all(&it, a, 0);
-
-#define INIT_ALL_RAVEL \
-    iter it; \
-    init_iter_all(&it, a, 1);
-
-#define INIT_ONE(dtype0, dtype1) \
+#define INIT(dtype0, dtype1) \
     iter it; \
     PyObject *y; \
     npy_##dtype1 *py; \
-    init_iter_one(&it, a, axis); \
+    init_iter(&it, a, axis); \
     y = PyArray_EMPTY(NDIM - 1, SHAPE, NPY_##dtype0, 0); \
     py = (npy_##dtype1 *)PyArray_DATA((PyArrayObject *)y);
 
 /* function signatures --------------------------------------------------- */
 
-/* low-level functions such as sum_all_float64 */
-#define REDUCE_ALL(name, dtype) \
+/* low-level functions such as sum_float64 */
+#define REDUCE(name, dtype) \
     static PyObject * \
-    name##_all_##dtype(PyArrayObject *a)
-
-/* low-level functions such as sum_one_float64 */
-#define REDUCE_ONE(name, dtype) \
-    static PyObject * \
-    name##_one_##dtype(PyArrayObject *a, int axis)
+    name##_##dtype(PyArrayObject *a, int axis)
 
 /* top-level functions such as sum */
 #define REDUCE_MAIN(name) \
@@ -56,29 +43,20 @@
         return reducer(#name, \
                        args, \
                        kwds, \
-                       name##_all_float64, \
-                       name##_all_float32, \
-                       name##_all_int64, \
-                       name##_all_int32, \
-                       name##_one_float64, \
-                       name##_one_float32, \
-                       name##_one_int64, \
-                       name##_one_int32); \
+                       name##_float64, \
+                       name##_float32, \
+                       name##_int64, \
+                       name##_int32); \
     }
 
 /* typedefs and prototypes ----------------------------------------------- */
 
-typedef PyObject *(*fall_t)(PyArrayObject *a);
 typedef PyObject *(*fone_t)(PyArrayObject *a, int axis);
 
 static PyObject *
 reducer(char *name,
         PyObject *args,
         PyObject *kwds,
-        fall_t fall_float64,
-        fall_t fall_float32,
-        fall_t fall_int64,
-        fall_t fall_int32,
         fone_t fone_float64,
         fone_t fone_float32,
         fone_t fone_int64,
@@ -87,21 +65,10 @@ reducer(char *name,
 /* sum00 ----------------------------------------------------------------- */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE_ALL(sum00, DTYPE0)
-{
-    npy_DTYPE0 asum = 0;
-    INIT_ALL
-    WHILE {
-        FOR asum += AI(DTYPE0);
-        NEXT
-    }
-    return PyFloat_FromDouble(asum);
-}
-
-REDUCE_ONE(sum00, DTYPE0)
+REDUCE(sum00, DTYPE0)
 {
     npy_DTYPE0 asum;
-    INIT_ONE(DTYPE0, DTYPE0)
+    INIT(DTYPE0, DTYPE0)
     if (LENGTH == 0) {
         FILL_Y(0)
     }
@@ -123,21 +90,10 @@ REDUCE_MAIN(sum00)
 /* sum01 ----------------------------------------------------------------- */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE_ALL(sum01, DTYPE0)
-{
-    npy_DTYPE0 asum = 0;
-    INIT_ALL
-    WHILE {
-        FOR asum += AI(DTYPE0);
-        NEXT
-    }
-    return PyFloat_FromDouble(asum);
-}
-
-REDUCE_ONE(sum01, DTYPE0)
+REDUCE(sum01, DTYPE0)
 {
     npy_DTYPE0 asum;
-    INIT_ONE(DTYPE0, DTYPE0)
+    INIT(DTYPE0, DTYPE0)
     if (LENGTH == 0) {
         FILL_Y(0)
     }
@@ -180,21 +136,10 @@ REDUCE_MAIN(sum01)
 /* sum02 ----------------------------------------------------------------- */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE_ALL(sum02, DTYPE0)
-{
-    npy_DTYPE0 asum = 0;
-    INIT_ALL
-    WHILE {
-        FOR asum += AI(DTYPE0);
-        NEXT
-    }
-    return PyFloat_FromDouble(asum);
-}
-
-REDUCE_ONE(sum02, DTYPE0)
+REDUCE(sum02, DTYPE0)
 {
     npy_DTYPE0 asum;
-    INIT_ONE(DTYPE0, DTYPE0)
+    INIT(DTYPE0, DTYPE0)
     if (LENGTH == 0) {
         FILL_Y(0)
     }
@@ -315,10 +260,6 @@ static PyObject *
 reducer(char *name,
         PyObject *args,
         PyObject *kwds,
-        fall_t fall_float64,
-        fall_t fall_float32,
-        fall_t fall_int64,
-        fall_t fall_int32,
         fone_t fone_float64,
         fone_t fone_float32,
         fone_t fone_int64,
@@ -328,7 +269,6 @@ reducer(char *name,
     int ndim;
     int axis;
     int dtype;
-    int reduce_all = 0;
 
     PyArrayObject *a;
 
@@ -354,7 +294,8 @@ reducer(char *name,
 
     /* does user want to reduce over all axes? */
     if (axis_obj == Py_None) {
-        reduce_all = 1;
+        VALUE_ERR("`axis` cannot be None");
+        return NULL;
     }
     else {
         axis = PyArray_PyIntAsInt(axis_obj);
@@ -376,48 +317,28 @@ reducer(char *name,
             return NULL;
         }
         if (ndim == 1) {
-            reduce_all = 1;
+            VALUE_ERR("ndim must be > 1");
+            return NULL;
         }
     }
 
     dtype = PyArray_TYPE(a);
 
-    if (reduce_all == 1) {
-        /* we are reducing the array along all axes */
-        if (dtype == NPY_FLOAT64) {
-            return fall_float64(a);
-        }
-        else if (dtype == NPY_FLOAT32) {
-            return fall_float32(a);
-        }
-        else if (dtype == NPY_INT64) {
-            return fall_int64(a);
-        }
-        else if (dtype == NPY_INT32) {
-            return fall_int32(a);
-        }
-        else {
-            return slow(name, args, kwds);
-        }
+    /* we are reducing an array with ndim > 1 over a single axis */
+    if (dtype == NPY_FLOAT64) {
+        return fone_float64(a, axis);
+    }
+    else if (dtype == NPY_FLOAT32) {
+        return fone_float32(a, axis);
+    }
+    else if (dtype == NPY_INT64) {
+        return fone_int64(a, axis);
+    }
+    else if (dtype == NPY_INT32) {
+        return fone_int32(a, axis);
     }
     else {
-        /* we are reducing an array with ndim > 1 over a single axis */
-        if (dtype == NPY_FLOAT64) {
-            return fone_float64(a, axis);
-        }
-        else if (dtype == NPY_FLOAT32) {
-            return fone_float32(a, axis);
-        }
-        else if (dtype == NPY_INT64) {
-            return fone_int64(a, axis);
-        }
-        else if (dtype == NPY_INT32) {
-            return fone_int32(a, axis);
-        }
-        else {
-            return slow(name, args, kwds);
-        }
-
+        return slow(name, args, kwds);
     }
 
 }

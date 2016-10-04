@@ -6,9 +6,9 @@ from .autotimeit import autotimeit
 __all__ = ['bench']
 
 
-def bench(dtype='float64', axes=[0, 0, 1],
-          shapes=[(100,), (1000, 1000), (1000, 1000)],
-          nans=[False, False, False],
+def bench(dtype='float64', axes=[0, 1],
+          shapes=[(1000, 1000), (1000, 1000)],
+          nans=[False, False],
           order='C',
           functions=None):
     """

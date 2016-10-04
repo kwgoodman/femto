@@ -42,7 +42,7 @@ struct _iter {
 typedef struct _iter iter;
 
 static BN_INLINE void
-init_iter_one(iter *it, PyArrayObject *a, int axis)
+init_iter(iter *it, PyArrayObject *a, int axis)
 {
     int i, j = 0;
     const int ndim = PyArray_NDIM(a);
@@ -74,70 +74,6 @@ init_iter_one(iter *it, PyArrayObject *a, int axis)
             }
         }
     }
-}
-
-static BN_INLINE void
-init_iter_all(iter *it, PyArrayObject *a, int ravel)
-{
-    int i, j = 0;
-    const int ndim = PyArray_NDIM(a);
-    const npy_intp *shape = PyArray_SHAPE(a);
-    const npy_intp *strides = PyArray_STRIDES(a);
-
-    it->axis = 0;
-    it->its = 0;
-    it->nits = 1;
-
-    if (ndim == 1) {
-        it->ndim_m2 = -1;
-        it->length = shape[0];
-        it->astride = strides[0];
-    }
-    else if (ndim == 0) {
-        it->ndim_m2 = -1;
-        it->length = 1;
-        it->astride = 0;
-    }
-    else if (C_CONTIGUOUS(a)) {
-        it->ndim_m2 = -1;
-        it->axis = ndim - 1;
-        it->length = PyArray_SIZE(a);
-        it->astride = strides[ndim - 1];
-    }
-    else if (F_CONTIGUOUS(a)) {
-        it->ndim_m2 = -1;
-        it->length = PyArray_SIZE(a);
-        it->astride = strides[0];
-    }
-    else if (ravel) {
-        it->ndim_m2 = -1;
-        a = (PyArrayObject *)PyArray_Ravel(a, NPY_ANYORDER);
-        Py_DECREF(a);
-        it->length = PyArray_DIM(a, 0);
-        it->astride = PyArray_STRIDE(a, 0);
-    }
-    else {
-        it->ndim_m2 = ndim - 2;
-        it->astride = strides[0];
-        for (i = 1; i < ndim; i++) {
-            if (strides[i] < it->astride) {
-                it->astride = strides[i];
-                it->axis = i;
-            }
-        }
-        it->length = shape[it->axis];
-        for (i = 0; i < ndim; i++) {
-            if (i != it->axis) {
-                it->indices[j] = 0;
-                it->astrides[j] = strides[i];
-                it->shape[j] = shape[i];
-                it->nits *= shape[i];
-                j++;
-            }
-        }
-    }
-
-    it->pa = PyArray_BYTES(a);
 }
 
 #define NEXT \
