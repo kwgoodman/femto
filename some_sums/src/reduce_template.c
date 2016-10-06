@@ -109,19 +109,22 @@ REDUCE(sum01, DTYPE0)
         else {
             Py_ssize_t i;
             Py_ssize_t repeat = LENGTH - LENGTH % 4;
-            npy_DTYPE0 asums[4];
+            npy_DTYPE0 s[4];
             WHILE {
-                asums[0] = asums[1] = asums[2] = asums[3] = 0;
-                for (i = 0; i < repeat; i += 4) {
-                    asums[0] += AX(DTYPE0, i);
-                    asums[1] += AX(DTYPE0, i + 1);
-                    asums[2] += AX(DTYPE0, i + 2);
-                    asums[3] += AX(DTYPE0, i + 3);
+                s[0] = AX(DTYPE0, 0);
+                s[1] = AX(DTYPE0, 1);
+                s[2] = AX(DTYPE0, 2);
+                s[3] = AX(DTYPE0, 3);
+                for (i = 4; i < repeat; i += 4) {
+                    s[0] += AX(DTYPE0, i);
+                    s[1] += AX(DTYPE0, i + 1);
+                    s[2] += AX(DTYPE0, i + 2);
+                    s[3] += AX(DTYPE0, i + 3);
                 }
                 for (i = i; i < LENGTH; i++) {
-                    asums[0] += AX(DTYPE0, i);
+                    s[0] += AX(DTYPE0, i);
                 }
-                YPP = asums[0] + asums[1] + asums[2] + asums[3];
+                YPP = s[0] + s[1] + s[2] + s[3];
                 NEXT
             }
         }
@@ -155,19 +158,30 @@ REDUCE(sum02, DTYPE0)
         else {
             Py_ssize_t i;
             Py_ssize_t repeat = LENGTH - LENGTH % 8;
-            npy_DTYPE0 asums[4];
+            npy_DTYPE0 s[8];
             WHILE {
-                asums[0] = asums[1] = asums[2] = asums[3] = 0;
-                for (i = 0; i < repeat; i += 8) {
-                    asums[0] += AX(DTYPE0, i + 0) + AX(DTYPE0, i + 1);
-                    asums[1] += AX(DTYPE0, i + 2) + AX(DTYPE0, i + 3);
-                    asums[2] += AX(DTYPE0, i + 4) + AX(DTYPE0, i + 5);
-                    asums[3] += AX(DTYPE0, i + 6) + AX(DTYPE0, i + 7);
+                s[0] = AX(DTYPE0, 0);
+                s[1] = AX(DTYPE0, 1);
+                s[2] = AX(DTYPE0, 2);
+                s[3] = AX(DTYPE0, 3);
+                s[4] = AX(DTYPE0, 4);
+                s[5] = AX(DTYPE0, 5);
+                s[6] = AX(DTYPE0, 6);
+                s[7] = AX(DTYPE0, 7);
+                for (i = 8; i < repeat; i += 8) {
+                    s[0] += AX(DTYPE0, i);
+                    s[1] += AX(DTYPE0, i + 1);
+                    s[2] += AX(DTYPE0, i + 2);
+                    s[3] += AX(DTYPE0, i + 3);
+                    s[4] += AX(DTYPE0, i + 4);
+                    s[5] += AX(DTYPE0, i + 5);
+                    s[6] += AX(DTYPE0, i + 6);
+                    s[7] += AX(DTYPE0, i + 7);
                 }
                 for (i = i; i < LENGTH; i++) {
-                    asums[0] += AX(DTYPE0, i);
+                    s[0] += AX(DTYPE0, i);
                 }
-                YPP = asums[0] + asums[1] + asums[2] + asums[3];
+                YPP = s[0] + s[1] + s[2] + s[3] + s[4] + s[5] + s[6] + s[7];
                 NEXT
             }
         }
