@@ -35,10 +35,9 @@ suite::
         sum02          0.48       0.71       1.05       1.33       0.77
         sum03          0.43       0.59       1.33       1.63       0.74
 
-Please help me avoid over optimizing for my particular operating system and
-CPU. `Let me know`_ the benchmark results on your system.
-
-If you have ideas on how to speed up the `code`_ then `share`_ them.
+Please help me avoid over optimizing for my particular operating system, CPU,
+and compiler. `Let me know`_ the benchmark results on your system. If you have
+ideas on how to speed up the `code`_ then `share`_ them.
 
 License
 =======

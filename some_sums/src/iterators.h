@@ -22,10 +22,6 @@
    and PyArray_ITER_NEXT.
 */
 
-/* one input array ------------------------------------------------------- */
-
-/* these iterators are used mainly by reduce functions such as nansum */
-
 struct _iter {
     int        ndim_m2; /* ndim - 2 */
     int        axis;    /* axis to not iterate over */
@@ -94,22 +90,16 @@ init_iter(iter *it, PyArrayObject *a, int axis)
 
 #define  NDIM           it.ndim_m2 + 2
 #define  SHAPE          it.shape
-#define  SIZE           it.nits * it.length
 #define  LENGTH         it.length
-#define  INDEX          it.i
 
 #define  WHILE          while (it.its < it.nits)
 #define  FOR            for (it.i = 0; it.i < it.length; it.i++)
-#define  RESET          it.its = 0;
 
 #define  AI(dtype)      *(npy_##dtype *)(it.pa + it.i * it.astride)
 #define  AX(dtype, x)   *(npy_##dtype *)(it.pa + (x) * it.astride)
 
 #define  YPP            *py++
-#define  YI(dtype)      *(npy_##dtype *)(it.py + it.i++ * it.ystride)
-#define  YX(dtype, x)   *(npy_##dtype *)(it.py + (x) * it.ystride)
-
-#define FILL_Y(value) \
+#define  FILL_Y(value) \
     int i; \
     Py_ssize_t size = PyArray_SIZE((PyArrayObject *)y); \
     for (i = 0; i < size; i++) YPP = value;

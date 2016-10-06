@@ -14,7 +14,6 @@ help:
 	@echo "flake8  -->  Check for pep8 errors"
 	@echo "readme  -->  Update benchmark results in README.rst"
 	@echo "bench   -->  Run performance benchmark"
-	@echo "detail  -->  Detailed benchmarks for all functions"
 	@echo "sdist   -->  Make source distribution"
 	@echo "doc     -->  Build Sphinx manual"
 
@@ -34,9 +33,6 @@ readme:
 
 bench:
 	${PYTHON} -c "import some_sums; some_sums.bench()"
-
-detail:
-	${PYTHON} -c "import some_sums; some_sums.bench_detailed('all')"
 
 sdist:
 	rm -f MANIFEST

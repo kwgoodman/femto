@@ -22,19 +22,6 @@
 #define NPY_NO_DEPRECATED_API NPY_1_11_API_VERSION
 #include <numpy/arrayobject.h>
 
-/* THREADS=1 releases the GIL but increases function call
- * overhead. THREADS=0 does not release the GIL but keeps
- * function call overhead low. Curly brackets are for C89
- * support. */
-#define THREADS 1
-#if THREADS
-    #define BN_BEGIN_ALLOW_THREADS Py_BEGIN_ALLOW_THREADS {
-    #define BN_END_ALLOW_THREADS   ;} Py_END_ALLOW_THREADS
-#else
-    #define BN_BEGIN_ALLOW_THREADS {
-    #define BN_END_ALLOW_THREADS }
-#endif
-
 /* for ease of dtype templating */
 #define NPY_float64 NPY_FLOAT64
 #define NPY_float32 NPY_FLOAT32
@@ -73,27 +60,6 @@
 #else
         #define BN_INLINE
 #endif
-
-/*
- * NAN and INFINITY like macros (same behavior as glibc for NAN, same as C99
- * for INFINITY). Copied from NumPy.
- */
-BN_INLINE static float __ss_inff(void)
-{
-    const union { npy_uint32 __i; float __f;} __bint = {0x7f800000UL};
-    return __bint.__f;
-}
-
-BN_INLINE static float __ss_nanf(void)
-{
-    const union { npy_uint32 __i; float __f;} __bint = {0x7fc00000UL};
-    return __bint.__f;
-}
-
-#define BN_INFINITYF __ss_inff()
-#define BN_NANF      __ss_nanf()
-#define BN_INFINITY ((npy_double)BN_INFINITYF)
-#define BN_NAN      ((npy_double)BN_NANF)
 
 #define C_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_C_CONTIGUOUS)
 #define F_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_F_CONTIGUOUS)
