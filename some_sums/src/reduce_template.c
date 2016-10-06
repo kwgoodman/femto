@@ -107,10 +107,10 @@ REDUCE(sum01, DTYPE0)
             }
         }
         else {
-            Py_ssize_t i;
-            Py_ssize_t repeat = LENGTH - LENGTH % 4;
-            npy_DTYPE0 s[4];
             WHILE {
+                Py_ssize_t i;
+                Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                npy_DTYPE0 s[4];
                 s[0] = AX(DTYPE0, 0);
                 s[1] = AX(DTYPE0, 1);
                 s[2] = AX(DTYPE0, 2);
@@ -156,10 +156,10 @@ REDUCE(sum02, DTYPE0)
             }
         }
         else {
-            Py_ssize_t i;
-            Py_ssize_t repeat = LENGTH - LENGTH % 8;
-            npy_DTYPE0 s[8];
             WHILE {
+                Py_ssize_t i;
+                Py_ssize_t repeat = LENGTH - LENGTH % 8;
+                npy_DTYPE0 s[8];
                 s[0] = AX(DTYPE0, 0);
                 s[1] = AX(DTYPE0, 1);
                 s[2] = AX(DTYPE0, 2);

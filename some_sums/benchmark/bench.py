@@ -48,7 +48,8 @@ def bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
     print('some_sums performance benchmark')
     print("%ssome_sums %s; Numpy %s" % (tab, ss.__version__, np.__version__))
     print("%sSpeed is NumPy a.sum(axis) time divided by\n"
-          "%sSome_sums sumXX(a, axis) time" % (tab, tab))
+          "%s    Some_sums sumXX(a, axis) time" % (tab, tab))
+    print("%sScore is len(speeds) / sum([1.0/s for s in speeds])" % tab)
     print('')
     header = [" "*14]
     header = ["".join(str(shape).split(" ")).center(11) for shape in shapes]
@@ -60,14 +61,16 @@ def bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
     print("".join(header))
     header = ["".join(("axis=" + str(axis)).split(" ")).center(11)
               for axis in axes]
+    header.append("   score")
     header = [" "*16] + header
     print("".join(header))
 
     suite = benchsuite(shapes, dtypes, axes, order, functions)
     for test in suite:
         name = test["name"].ljust(12)
-        fmt = tab + name + "%7.2f" + "%11.2f"*(len(shapes) - 1)
+        fmt = tab + name + "%7.2f" + "%11.2f"*(len(shapes) - 1) + "%11.2f"
         speed = timer(test['statements'], test['setups'])
+        speed.append(len(speed) / sum([1.0/s for s in speed]))
         print(fmt % tuple(speed))
 
 

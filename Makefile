@@ -27,7 +27,7 @@ test:
 	${PYTHON} -c "import some_sums;some_sums.test()"
 
 flake8:
-	flake8 --exclude=doc .
+	flake8 .
 
 readme:
 	PYTHONPATH=`pwd`:PYTHONPATH ${PYTHON} tools/update_readme.py
