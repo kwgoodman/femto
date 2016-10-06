@@ -16,16 +16,16 @@ suite::
 
     >>> ss.bench()
     some_sums performance benchmark
-        some_sums 0.0.1dev; Numpy 1.11.0
-        Speed is a.sum(axis) time divided by ss.sumXX(a, axis) time
-        dtype = float64
+        some_sums 0.0.1dev; Numpy 1.11.2
+        Speed is NumPy a.sum(axis) time divided by
+        Some_sums sumXX(a, axis) time
 
-                     no NaN     no NaN
-                    (1000,1000)(1000,1000)
-                       axis=0     axis=1
-        sum00          0.34       0.46
-        sum01          0.48       1.13
-        sum02          0.46       1.07
+                    (1000,1000)(1000,1000)(1000,1000)(1000,1000)
+                      float64     int64     float64     int64
+                       axis=0     axis=0     axis=1     axis=1
+        sum00          0.35       0.61       0.46       0.84
+        sum01          0.46       0.68       1.13       1.37
+        sum02          0.46       0.74       1.05       1.30
 
 If you have ideas on how to speed up the `code`_ then `share`_ them.
 
