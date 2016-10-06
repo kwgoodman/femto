@@ -136,10 +136,13 @@ REDUCE(sum01, DTYPE0)
 REDUCE_MAIN(sum01)
 
 
-/* sum02 ----------------------------------------------------------------- */
+/* sum02, sum03 ---------------------------------------------------------- */
 
+/* repeat = {'NAME': ['sum02', 'sum03'],
+             'PREFETCH': ['', 
+             '__builtin_prefetch(it.pa + i * it.astride + 1024, 0, 3);']} */
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(sum02, DTYPE0)
+REDUCE(NAME, DTYPE0)
 {
     npy_DTYPE0 asum;
     INIT(DTYPE0, DTYPE0)
@@ -169,6 +172,7 @@ REDUCE(sum02, DTYPE0)
                 s[6] = AX(DTYPE0, 6);
                 s[7] = AX(DTYPE0, 7);
                 for (i = 8; i < repeat; i += 8) {
+                    PREFETCH
                     s[0] += AX(DTYPE0, i);
                     s[1] += AX(DTYPE0, i + 1);
                     s[2] += AX(DTYPE0, i + 2);
@@ -190,7 +194,8 @@ REDUCE(sum02, DTYPE0)
 }
 /* dtype end */
 
-REDUCE_MAIN(sum02)
+REDUCE_MAIN(NAME)
+/* repeat end */
 
 
 /* python strings -------------------------------------------------------- */
@@ -417,6 +422,7 @@ reduce_methods[] = {
     {"sum00", (PyCFunction)sum00, VARKEY, sum_doc},
     {"sum01", (PyCFunction)sum01, VARKEY, sum_doc},
     {"sum02", (PyCFunction)sum02, VARKEY, sum_doc},
+    {"sum03", (PyCFunction)sum03, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 

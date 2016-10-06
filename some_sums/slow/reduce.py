@@ -12,3 +12,4 @@ def _sum(a, axis=None):
 sum00 = _sum
 sum01 = _sum
 sum02 = _sum
+sum03 = _sum
