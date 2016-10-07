@@ -6,7 +6,8 @@ import some_sums as ss
 __all__ = ['bench']
 
 
-def bench(shapes=[(1,1000), (1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
+def bench(shapes=[(1, 1000), (1000, 1000), (1000, 1000), (1000, 1000),
+                  (1000, 1000)],
           dtypes=['float64', 'float64', 'int64', 'float64', 'int64'],
           axes=[1, 0, 0, 1, 1],
           order='C',
