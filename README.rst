@@ -28,16 +28,16 @@ suite::
     some_sums performance benchmark
         some_sums 0.0.1dev; Numpy 1.11.2
         Speed is NumPy a.sum(axis) time divided by
-            Some_sums sumXX(a, axis) time
-        Score is len(speeds) / sum([1.0/s for s in speeds])
+        Some_sums sumXX(a, axis) time
+        Score is len(speeds)/sum([1.0/s for s in speeds])
 
-                    (1000,1000)(1000,1000)(1000,1000)(1000,1000)
-                      float64     int64     float64     int64
-                       axis=0     axis=0     axis=1     axis=1     score
-        sum00          0.33       0.62       0.46       0.83       0.50
-        sum01          0.46       0.69       1.13       1.37       0.76
-        sum02          0.48       0.71       1.05       1.33       0.77
-        sum03          0.43       0.59       1.33       1.63       0.74
+            (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
+            float64    float64     int64     float64     int64
+             axis=1     axis=0     axis=0     axis=1     axis=1     score
+    sum00     3.51       0.34       0.62       0.46       0.84       0.61
+    sum01     8.15       0.47       0.71       1.15       1.40       0.95
+    sum02     8.17       0.49       0.73       1.05       1.30       0.95
+    sum03     8.15       0.43       0.60       1.33       1.60       0.91
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have

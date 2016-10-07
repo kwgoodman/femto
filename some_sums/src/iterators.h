@@ -48,26 +48,20 @@ init_iter(iter *it, PyArrayObject *a, int axis)
     it->axis = axis;
     it->its = 0;
     it->nits = 1;
+    it->ndim_m2 = ndim - 2;
     it->pa = PyArray_BYTES(a);
 
-    it->ndim_m2 = -1;
-    it->length = 1;
-    it->astride = 0;
-
-    if (ndim != 0) {
-        it->ndim_m2 = ndim - 2;
-        for (i = 0; i < ndim; i++) {
-            if (i == axis) {
-                it->astride = strides[i];
-                it->length = shape[i];
-            }
-            else {
-                it->indices[j] = 0;
-                it->astrides[j] = strides[i];
-                it->shape[j] = shape[i];
-                it->nits *= shape[i];
-                j++;
-            }
+    for (i = 0; i < ndim; i++) {
+        if (i == axis) {
+            it->astride = strides[i];
+            it->length = shape[i];
+        }
+        else {
+            it->indices[j] = 0;
+            it->astrides[j] = strides[i];
+            it->shape[j] = shape[i];
+            it->nits *= shape[i];
+            j++;
         }
     }
 }

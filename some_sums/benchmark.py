@@ -6,9 +6,9 @@ import some_sums as ss
 __all__ = ['bench']
 
 
-def bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
-          dtypes=['float64', 'int64', 'float64', 'int64'],
-          axes=[0, 0, 1, 1],
+def bench(shapes=[(1,1000), (1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
+          dtypes=['float64', 'float64', 'int64', 'float64', 'int64'],
+          axes=[1, 0, 0, 1, 1],
           order='C',
           functions=None):
     """
@@ -42,33 +42,31 @@ def bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
     if len(dtypes) != len(axes):
         raise ValueError("`dtypes` and `axes` must have the same length")
 
-    tab = '    '
-
     # header
     print('some_sums performance benchmark')
-    print("%ssome_sums %s; Numpy %s" % (tab, ss.__version__, np.__version__))
-    print("%sSpeed is NumPy a.sum(axis) time divided by\n"
-          "%s    Some_sums sumXX(a, axis) time" % (tab, tab))
-    print("%sScore is len(speeds) / sum([1.0/s for s in speeds])" % tab)
+    print("    some_sums %s; Numpy %s" % (ss.__version__, np.__version__))
+    print("    Speed is NumPy a.sum(axis) time divided by\n"
+          "    Some_sums sumXX(a, axis) time")
+    print("    Score is len(speeds)/sum([1.0/s for s in speeds])")
     print('')
-    header = [" "*14]
+    header = [" "*4]
     header = ["".join(str(shape).split(" ")).center(11) for shape in shapes]
-    header = [" "*16] + header
+    header = [" "*6] + header
     print("".join(header))
     header = ["".join((str(dtype)).split(" ")).center(11)
               for dtype in dtypes]
-    header = [" "*16] + header
+    header = [" "*6] + header
     print("".join(header))
     header = ["".join(("axis=" + str(axis)).split(" ")).center(11)
               for axis in axes]
     header.append("   score")
-    header = [" "*16] + header
+    header = [" "*6] + header
     print("".join(header))
 
     suite = benchsuite(shapes, dtypes, axes, order, functions)
     for test in suite:
-        name = test["name"].ljust(12)
-        fmt = tab + name + "%7.2f" + "%11.2f"*(len(shapes) - 1) + "%11.2f"
+        name = test["name"].ljust(7)
+        fmt = name + "%7.2f" + "%11.2f"*(len(shapes) - 1) + "%11.2f"
         speed = timer(test['statements'], test['setups'])
         speed.append(len(speed) / sum([1.0/s for s in speed]))
         print(fmt % tuple(speed))
