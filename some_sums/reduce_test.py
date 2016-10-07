@@ -5,17 +5,17 @@ import traceback
 
 from nose.tools import ok_
 import numpy as np
-from numpy.testing import assert_equal, assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 import some_sums as ss
 
-DTYPES = [np.float64, np.float32, np.int64, np.int32]
+DTYPES = [np.float64, np.float32, np.int64, np.int32, np.float16]
 
 
 def test_reduce():
     "test reduce functions"
     for func in ss.get_functions('reduce'):
-        yield unit_maker, func
+        yield unit_maker, func, arrays
 
 
 def arrays(dtypes, name):
@@ -51,13 +51,13 @@ def arrays(dtypes, name):
                     yield a.reshape(shape)
 
 
-def unit_maker(func, decimal=5):
-    "Test that ss.xxx gives the same output as ss.slow.xxx."
+def unit_maker(func, array_func, decimal=5):
+    "Test that ss.sumXX gives the same output as np.sum."
     fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s\n'
     fmt += '\nInput array:\n%s\n'
     name = func.__name__
-    func0 = eval('ss.slow.%s' % name)
-    for i, a in enumerate(arrays(DTYPES, name)):
+    func0 = np.sum
+    for i, a in enumerate(array_func(DTYPES, name)):
         axes = range(-1, a.ndim)
         for axis in axes:
             actual = 'Crashed'
@@ -83,18 +83,13 @@ def unit_maker(func, decimal=5):
                 err_msg = fmt % tup
                 if actualraised != desiredraised:
                     if actualraised:
-                        fmt2 = '\nss.%s raised\nss.slow.%s ran\n\n%s'
+                        fmt2 = '\nss.%s raised\nnp.sum ran\n\n%s'
                     else:
-                        fmt2 = '\nss.%s ran\nss.slow.%s raised\n\n%s'
-                    msg = fmt2 % (name, name, traceback.format_exc())
+                        fmt2 = '\nss.%s ran\nnp.sum raised\n\n%s'
+                    msg = fmt2 % (name, traceback.format_exc())
                     err_msg += msg
                     ok_(False, err_msg)
                 assert_array_almost_equal(actual, desired, decimal, err_msg)
-                err_msg += '\n dtype mismatch %s %s'
-                if hasattr(actual, 'dtype') and hasattr(desired, 'dtype'):
-                    da = actual.dtype
-                    dd = desired.dtype
-                    assert_equal(da, dd, err_msg % (da, dd))
 
 
 # ---------------------------------------------------------------------------
@@ -129,13 +124,13 @@ def arrays_strides(dtypes=DTYPES):
 
 
 def unit_maker_strides(func, decimal=5):
-    "Test that ss.xxx gives the same output as ss.slow.xxx."
+    "Test that ss.sumXX gives the same output as np.sum."
     fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s\n'
     fmt += '\nInput array:\n%s\n'
     fmt += '\nStrides: %s\n'
     fmt += '\nFlags: \n%s\n'
     name = func.__name__
-    func0 = eval('ss.slow.%s' % name)
+    func0 = np.sum
     for i, a in enumerate(arrays_strides()):
         axes = range(-1, a.ndim)
         for axis in axes:
@@ -156,7 +151,7 @@ def unit_maker_strides(func, decimal=5):
 def test_unrolling():
     "test loop unrolling"
     for func in ss.get_functions('reduce'):
-        yield unit_maker_unroll, func
+        yield unit_maker, func, unroll_arrays
 
 
 def unroll_arrays(dtypes, name):
@@ -165,55 +160,9 @@ def unroll_arrays(dtypes, name):
         rs = np.random.RandomState(ndim)
         for length in range(20):
             for dtype in dtypes:
-                a = np.arange(length * ndim, dtype=dtype)
-                rs.shuffle(a)
-                if ndim == 1:
-                    yield a
-                else:
+                if ndim == 2:
+                    a = np.arange(length * 2, dtype=dtype)
+                    rs.shuffle(a)
                     yield a.reshape(2, -1)
-
-
-def unit_maker_unroll(func, decimal=5):
-    "Test that ss.xxx gives the same output as ss.slow.xxx."
-    fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s\n'
-    fmt += '\nInput array:\n%s\n'
-    name = func.__name__
-    func0 = eval('ss.slow.%s' % name)
-    for i, a in enumerate(unroll_arrays(DTYPES, name)):
-        axes = range(-1, a.ndim)
-        for axis in axes:
-            actual = 'Crashed'
-            desired = 'Crashed'
-            actualraised = False
-            try:
-                # do not use a.copy() here because it will C order the array
-                actual = func(a, axis=axis)
-            except:
-                actualraised = True
-            desiredraised = False
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    desired = func0(a, axis=axis)
-            except:
-                desiredraised = True
-            if actualraised and desiredraised:
-                pass
-            else:
-                tup = (name, 'a'+str(i), str(a.dtype), str(a.shape),
-                       str(axis), a)
-                err_msg = fmt % tup
-                if actualraised != desiredraised:
-                    if actualraised:
-                        fmt2 = '\nss.%s raised\nss.slow.%s ran\n\n%s'
-                    else:
-                        fmt2 = '\nss.%s ran\nss.slow.%s raised\n\n%s'
-                    msg = fmt2 % (name, name, traceback.format_exc())
-                    err_msg += msg
-                    ok_(False, err_msg)
-                assert_array_almost_equal(actual, desired, decimal, err_msg)
-                err_msg += '\n dtype mismatch %s %s'
-                if hasattr(actual, 'dtype') and hasattr(desired, 'dtype'):
-                    da = actual.dtype
-                    dd = desired.dtype
-                    assert_equal(da, dd, err_msg % (da, dd))
+                else:
+                    raise ValueError("`ndim` must be 2 or 3")

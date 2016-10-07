@@ -308,7 +308,8 @@ reducer(char *name,
 
     /* check for byte swapped input array */
     if PyArray_ISBYTESWAPPED(a) {
-        return slow(name, args, kwds);
+        VALUE_ERR("Byte-swapped arrays are not supported");
+        return NULL;
     }
 
     /* does user want to reduce over all axes? */
@@ -365,7 +366,7 @@ reducer(char *name,
         return fone_int32(a, axis);
     }
     else {
-        return slow(name, args, kwds);
+        return PyArray_Sum(a, axis, dtype, NULL);
     }
 
 }

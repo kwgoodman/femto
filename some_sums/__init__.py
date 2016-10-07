@@ -11,7 +11,6 @@ except:
     pass
 
 try:
-    from . import slow
     from some_sums.version import __version__
     from some_sums.benchmark import bench
     from some_sums.util import get_functions
