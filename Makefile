@@ -2,8 +2,6 @@
 
 PYTHON=python
 
-srcdir := some_sums/
-
 help:
 	@echo "Available tasks:"
 	@echo "help    -->  This help page"
@@ -15,7 +13,6 @@ help:
 	@echo "readme  -->  Update benchmark results in README.rst"
 	@echo "bench   -->  Run performance benchmark"
 	@echo "sdist   -->  Make source distribution"
-	@echo "doc     -->  Build Sphinx manual"
 
 all: clean build test flake8
 
@@ -39,15 +36,9 @@ sdist:
 	${PYTHON} setup.py sdist
 	git status
 
-# doc directory exists so use phony
-.PHONY: doc
-doc: clean build
-	rm -rf build/sphinx
-	${PYTHON} setup.py build_sphinx
-
 clean:
 	rm -rf build dist some_sums.egg-info
 	find . -name \*.pyc -delete
-	rm -rf ${srcdir}/*.html ${srcdir}/build
-	rm -rf ${srcdir}/*.c
-	rm -rf ${srcdir}/*.so
+	rm -rf build
+	rm -rf some_sums/reduce.so
+	rm -rf some_sums/src/reduce.c

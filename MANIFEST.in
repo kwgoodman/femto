@@ -1,6 +1,6 @@
 include README.rst
 include LICENSE some_sums/LICENSE
-include Makefile tox.ini
+include Makefile
 
 recursive-include some_sums/src *.c *.h
 exclude some_sums/src/reduce.c
