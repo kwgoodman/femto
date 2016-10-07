@@ -40,8 +40,7 @@
     static PyObject * \
     name(PyObject *self, PyObject *args, PyObject *kwds) \
     { \
-        return reducer(#name, \
-                       args, \
+        return reducer(args, \
                        kwds, \
                        name##_float64, \
                        name##_float32, \
@@ -54,8 +53,7 @@
 typedef PyObject *(*fone_t)(PyArrayObject *a, int axis);
 
 static PyObject *
-reducer(char *name,
-        PyObject *args,
+reducer(PyObject *args,
         PyObject *kwds,
         fone_t fone_float64,
         fone_t fone_float32,
@@ -276,8 +274,7 @@ parse_args(PyObject *args,
 }
 
 static PyObject *
-reducer(char *name,
-        PyObject *args,
+reducer(PyObject *args,
         PyObject *kwds,
         fone_t fone_float64,
         fone_t fone_float32,

@@ -9,7 +9,11 @@ created some_sums.
 
 **some_sums**, written in C, contains several implementations of a sum
 function. To keep things simple the input array must be at least 2d and the
-axis of summation cannot be None.
+axis of summation cannot be None. Limiting ourselves to the 1d case would
+have be even simpler. But I am interested in both summing along an axis
+where the array elements are closely packed in memory (e.g. axis=-1 of a
+C contiguous array) and where they are widely spaced (axis=0). Both cases
+require different optimizations.
 
 My goal is to find fast ways to implement reduction functions (sum, mean,
 std, max, nansum, etc.) that are bound by memory I/O. I chose summation as a
