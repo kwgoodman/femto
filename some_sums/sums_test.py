@@ -1,4 +1,4 @@
-"Test reduce functions."
+"Test sums functions."
 
 import warnings
 import traceback
@@ -12,9 +12,9 @@ import some_sums as ss
 DTYPES = [np.float64, np.float32, np.int64, np.int32, np.float16]
 
 
-def test_reduce():
-    "test reduce functions"
-    for func in ss.get_functions('reduce'):
+def test_sums():
+    "test sums functions"
+    for func in ss.get_functions():
         yield unit_maker, func, arrays
 
 
@@ -96,8 +96,8 @@ def unit_maker(func, array_func, decimal=5):
 # Test with arrays that are not C ordered
 
 def test_strides():
-    "test reduce functions with non-C ordered arrays"
-    for func in ss.get_functions('reduce'):
+    "test sums functions with non-C ordered arrays"
+    for func in ss.get_functions():
         yield unit_maker_strides, func
 
 
@@ -150,7 +150,7 @@ def unit_maker_strides(func, decimal=5):
 
 def test_unrolling():
     "test loop unrolling"
-    for func in ss.get_functions('reduce'):
+    for func in ss.get_functions():
         yield unit_maker, func, unroll_arrays
 
 

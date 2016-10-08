@@ -3,4 +3,4 @@ include LICENSE some_sums/LICENSE
 include Makefile
 
 recursive-include some_sums/src *.c *.h
-exclude some_sums/src/reduce.c
+exclude some_sums/src/sums.c

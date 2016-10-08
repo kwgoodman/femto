@@ -15,10 +15,103 @@
     along with some_sums.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "some_sums.h"
+#include <Python.h>
+
+#define NPY_NO_DEPRECATED_API NPY_1_11_API_VERSION
+#include <numpy/arrayobject.h>
+
+/* for ease of dtype templating */
+#define NPY_float64 NPY_FLOAT64
+#define NPY_float32 NPY_FLOAT32
+#define NPY_int64   NPY_INT64
+#define NPY_int32   NPY_INT32
+#define NPY_intp    NPY_INTP
+#define NPY_MAX_int64 NPY_MAX_INT64
+#define NPY_MAX_int32 NPY_MAX_INT32
+#define NPY_MIN_int64 NPY_MIN_INT64
+#define NPY_MIN_int32 NPY_MIN_INT32
+
+#if PY_MAJOR_VERSION >= 3
+    #define PyString_FromString PyBytes_FromString
+    #define PyInt_FromLong PyLong_FromLong
+    #define PyInt_AsLong PyLong_AsLong
+    #define PyString_InternFromString PyUnicode_InternFromString
+#endif
+
+#define VARKEY METH_VARARGS | METH_KEYWORDS
+#define error_converting(x) (((x) == -1) && PyErr_Occurred())
+
+#define VALUE_ERR(text)   PyErr_SetString(PyExc_ValueError, text)
+#define TYPE_ERR(text)    PyErr_SetString(PyExc_TypeError, text)
+#define MEMORY_ERR(text)  PyErr_SetString(PyExc_MemoryError, text)
+#define RUNTIME_ERR(text) PyErr_SetString(PyExc_RuntimeError, text)
+
+/* `inline` copied from NumPy. */
+#if defined(_MSC_VER)
+        #define BN_INLINE __inline
+#elif defined(__GNUC__)
+	#if defined(__STRICT_ANSI__)
+		#define BN_INLINE __inline__
+	#else
+		#define BN_INLINE inline
+	#endif
+#else
+        #define BN_INLINE
+#endif
+
+#define C_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_C_CONTIGUOUS)
+#define F_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_F_CONTIGUOUS)
+#define IS_CONTIGUOUS(a) (C_CONTIGUOUS(a) || F_CONTIGUOUS(a))
+#include <Python.h>
+#define NPY_NO_DEPRECATED_API NPY_1_11_API_VERSION
+#include <numpy/arrayobject.h>
+
+/* for ease of dtype templating */
+#define NPY_float64 NPY_FLOAT64
+#define NPY_float32 NPY_FLOAT32
+#define NPY_int64   NPY_INT64
+#define NPY_int32   NPY_INT32
+#define NPY_intp    NPY_INTP
+#define NPY_MAX_int64 NPY_MAX_INT64
+#define NPY_MAX_int32 NPY_MAX_INT32
+#define NPY_MIN_int64 NPY_MIN_INT64
+#define NPY_MIN_int32 NPY_MIN_INT32
+
+#if PY_MAJOR_VERSION >= 3
+    #define PyString_FromString PyBytes_FromString
+    #define PyInt_FromLong PyLong_FromLong
+    #define PyInt_AsLong PyLong_AsLong
+    #define PyString_InternFromString PyUnicode_InternFromString
+#endif
+
+#define VARKEY METH_VARARGS | METH_KEYWORDS
+#define error_converting(x) (((x) == -1) && PyErr_Occurred())
+
+#define VALUE_ERR(text)   PyErr_SetString(PyExc_ValueError, text)
+#define TYPE_ERR(text)    PyErr_SetString(PyExc_TypeError, text)
+#define MEMORY_ERR(text)  PyErr_SetString(PyExc_MemoryError, text)
+#define RUNTIME_ERR(text) PyErr_SetString(PyExc_RuntimeError, text)
+
+/* `inline` copied from NumPy. */
+#if defined(_MSC_VER)
+        #define BN_INLINE __inline
+#elif defined(__GNUC__)
+	#if defined(__STRICT_ANSI__)
+		#define BN_INLINE __inline__
+	#else
+		#define BN_INLINE inline
+	#endif
+#else
+        #define BN_INLINE
+#endif
+
+#define C_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_C_CONTIGUOUS)
+#define F_CONTIGUOUS(a) PyArray_CHKFLAGS(a, NPY_ARRAY_F_CONTIGUOUS)
+#define IS_CONTIGUOUS(a) (C_CONTIGUOUS(a) || F_CONTIGUOUS(a))
+
 #include "iterators.h"
 
-/* init macros ----------------------------------------------------------- */
+/* macros, signature, typedefs, prototypes ------------------------------- */
 
 #define INIT(dtype0, dtype1) \
     iter it; \
@@ -28,14 +121,10 @@
     y = PyArray_EMPTY(NDIM - 1, SHAPE, NPY_##dtype0, 0); \
     py = (npy_##dtype1 *)PyArray_DATA((PyArrayObject *)y);
 
-/* function signatures --------------------------------------------------- */
-
-/* low-level functions such as sum_float64 */
 #define REDUCE(name, dtype) \
     static PyObject * \
     name##_##dtype(PyArrayObject *a, int axis)
 
-/* top-level functions such as sum */
 #define REDUCE_MAIN(name) \
     static PyObject * \
     name(PyObject *self, PyObject *args, PyObject *kwds) \
@@ -48,8 +137,6 @@
                        name##_int32); \
     }
 
-/* typedefs and prototypes ----------------------------------------------- */
-
 typedef PyObject *(*fone_t)(PyArrayObject *a, int axis);
 
 static PyObject *
@@ -61,6 +148,8 @@ reducer(PyObject *args,
         fone_t fone_int32);
 
 /* sum00 ----------------------------------------------------------------- */
+
+/* simple for loop */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum00, DTYPE0)
@@ -86,6 +175,8 @@ REDUCE_MAIN(sum00)
 
 
 /* sum01 ----------------------------------------------------------------- */
+
+/* simple for loop with manual loop unrolling (X4) */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum01, DTYPE0)
@@ -370,7 +461,7 @@ reducer(PyObject *args,
 
 /* docstrings ------------------------------------------------------------- */
 
-static char reduce_doc[] = "some_sums's some sums.";
+static char module_doc[] = "some_sums's some sums.";
 
 static char sum_doc[] =
 /* MULTILINE STRING BEGIN
@@ -416,7 +507,7 @@ MULTILINE STRING END */
 /* python wrapper -------------------------------------------------------- */
 
 static PyMethodDef
-reduce_methods[] = {
+sums_methods[] = {
     {"sum00", (PyCFunction)sum00, VARKEY, sum_doc},
     {"sum01", (PyCFunction)sum01, VARKEY, sum_doc},
     {"sum02", (PyCFunction)sum02, VARKEY, sum_doc},
@@ -427,12 +518,12 @@ reduce_methods[] = {
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef
-reduce_def = {
+sums_def = {
    PyModuleDef_HEAD_INIT,
-   "reduce",
-   reduce_doc,
+   "sums",
+   module_doc,
    -1,
-   reduce_methods
+   sums_methods
 };
 #endif
 
@@ -440,16 +531,16 @@ reduce_def = {
 PyMODINIT_FUNC
 #if PY_MAJOR_VERSION >= 3
 #define RETVAL m
-PyInit_reduce(void)
+PyInit_sums(void)
 #else
 #define RETVAL
-initreduce(void)
+initsums(void)
 #endif
 {
     #if PY_MAJOR_VERSION >=3
-        PyObject *m = PyModule_Create(&reduce_def);
+        PyObject *m = PyModule_Create(&sums_def);
     #else
-        PyObject *m = Py_InitModule3("reduce", reduce_methods, reduce_doc);
+        PyObject *m = Py_InitModule3("sums", sums_methods, module_doc);
     #endif
     if (m == NULL) return RETVAL;
     import_array();

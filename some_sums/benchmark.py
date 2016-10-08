@@ -46,8 +46,7 @@ def bench(shapes=[(1, 1000), (1000, 1000), (1000, 1000), (1000, 1000),
     # header
     print('some_sums performance benchmark')
     print("    some_sums %s; Numpy %s" % (ss.__version__, np.__version__))
-    print("    Speed is NumPy a.sum(axis) time divided by\n"
-          "    Some_sums sumXX(a, axis) time")
+    print("    Speed is NumPy time divided by some_sums time")
     print("    Score is len(speeds)/sum([1.0/s for s in speeds])")
     print('')
     header = [" "*4]
@@ -110,7 +109,7 @@ def benchsuite(shapes, dtypes, axes, order, functions):
         return setups
 
     # add functions to suite
-    funcs = ss.get_functions("reduce", as_string=True)
+    funcs = ss.get_functions(as_string=True)
     for func in funcs:
         if functions is not None and func not in functions:
             continue

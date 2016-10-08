@@ -40,5 +40,5 @@ clean:
 	rm -rf build dist some_sums.egg-info
 	find . -name \*.pyc -delete
 	rm -rf build
-	rm -rf some_sums/reduce.so
-	rm -rf some_sums/src/reduce.c
+	rm -rf some_sums/sums.so
+	rm -rf some_sums/src/sums.c

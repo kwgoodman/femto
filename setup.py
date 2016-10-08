@@ -24,8 +24,8 @@ class build_ext(_build_ext):
 def prepare_modules():
     from some_sums.src.template import make_c_files
     make_c_files()
-    ext = [Extension("some_sums.reduce",
-                     sources=["some_sums/src/reduce.c"],
+    ext = [Extension("some_sums.sums",
+                     sources=["some_sums/src/sums.c"],
                      include_dirs=[],
                      extra_compile_args=['-O2'])]
     return ext
