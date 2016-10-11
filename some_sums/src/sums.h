@@ -117,9 +117,15 @@
     y = PyArray_EMPTY(NDIM - 1, SHAPE, NPY_##dtype0, 0); \
     py = (npy_##dtype1 *)PyArray_DATA((PyArrayObject *)y);
 
+#define INIT01(dtype0, dtype1) \
+    iter it; \
+    npy_##dtype1 *py; \
+    init_iter(&it, a, axis); \
+    y = PyArray_EMPTY(NDIM - 1, SHAPE, NPY_##dtype0, 0); \
+    py = (npy_##dtype1 *)PyArray_DATA((PyArrayObject *)y);
+
 #define INIT2(dtype0, dtype1) \
     iter2 it; \
-    PyObject *y; \
     int i, j=0, ndim = PyArray_NDIM(a); \
     npy_intp shape[NPY_MAXDIMS]; \
     for (i = 0; i < ndim; i++) { \
@@ -160,10 +166,6 @@ reducer(PyObject *args,
 static PyObject *
 reducer02(PyObject *args,
           PyObject *kwds,
-          fone_t fone_float64,
-          fone_t fone_float32,
-          fone_t fone_int64,
-          fone_t fone_int32,
           fnf_t f_float64,
           fnf_t f_float32,
           fnf_t f_int64,

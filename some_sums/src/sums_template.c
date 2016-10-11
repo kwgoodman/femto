@@ -104,18 +104,60 @@ REDUCE_MAIN(sum01)
 static PyObject *
 sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
 {
-    INIT2(DTYPE0, DTYPE0)
-    if (LENGTH == 0) {
-        char *py = PyArray_BYTES((PyArrayObject *)y);
-        FILL_Y(0)
+    PyObject *y;
+    if (axis == min_axis) {
+        npy_DTYPE0 asum;
+        INIT01(DTYPE0, DTYPE0)
+        if (LENGTH == 0) {
+            FILL_Y(0)
+        }
+        else {
+            if (LENGTH < 4) {
+                WHILE {
+                    asum = 0;
+                    FOR asum += AI(DTYPE0);
+                    YPP = asum;
+                    NEXT
+                }
+            }
+            else {
+                WHILE {
+                    Py_ssize_t i;
+                    Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                    npy_DTYPE0 s[4];
+                    s[0] = AX(DTYPE0, 0);
+                    s[1] = AX(DTYPE0, 1);
+                    s[2] = AX(DTYPE0, 2);
+                    s[3] = AX(DTYPE0, 3);
+                    for (i = 4; i < repeat; i += 4) {
+                        s[0] += AX(DTYPE0, i);
+                        s[1] += AX(DTYPE0, i + 1);
+                        s[2] += AX(DTYPE0, i + 2);
+                        s[3] += AX(DTYPE0, i + 3);
+                    }
+                    for (i = i; i < LENGTH; i++) {
+                        s[0] += AX(DTYPE0, i);
+                    }
+                    YPP = s[0] + s[1] + s[2] + s[3];
+                    NEXT
+                }
+            }
+        }
     }
     else {
-        //memset(it.py, 0, PyArray_SIZE((PyArrayObject *)y) * sizeof(npy_DTYPE0));
-        WHILE {
-            FOR {
-                *(npy_DTYPE0 *)(it.py + it.i * it.ystride) += AI(DTYPE0);
+        INIT2(DTYPE0, DTYPE0)
+        if (LENGTH == 0) {
+            char *py = PyArray_BYTES((PyArrayObject *)y);
+            FILL_Y(0)
+        }
+        else {
+            //memset(it.py, 0, PyArray_SIZE((PyArrayObject *)y) * sizeof(npy_DTYPE0));
+            WHILE {
+                FOR {
+                    *(npy_DTYPE0 *)(it.py + it.i * it.ystride) += AI(DTYPE0);
+                }
+                NEXT2
             }
-            NEXT2
         }
     }
     return y;
@@ -127,77 +169,11 @@ sum02(PyObject *self, PyObject *args, PyObject *kwds)
 {
     return reducer02(args,
                      kwds,
-                     sum01_float64,
-                     sum01_float32,
-                     sum01_int64,
-                     sum01_int32,
                      sum02_float64,
                      sum02_float32,
                      sum02_int64,
                      sum02_int32);
 }
-
-
-/* sum03, sum04 ---------------------------------------------------------- */
-
-/* repeat = {'NAME': ['sum03', 'sum04'],
-             'PREFETCH': ['', 
-             '__builtin_prefetch(it.pa + i * it.astride + 1024, 0, 3);']} */
-/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(NAME, DTYPE0)
-{
-    npy_DTYPE0 asum;
-    INIT(DTYPE0, DTYPE0)
-    if (LENGTH == 0) {
-        FILL_Y(0)
-    }
-    else {
-        if (LENGTH < 8) {
-            WHILE {
-                asum = 0;
-                FOR asum += AI(DTYPE0);
-                YPP = asum;
-                NEXT
-            }
-        }
-        else {
-            WHILE {
-                Py_ssize_t i;
-                Py_ssize_t repeat = LENGTH - LENGTH % 8;
-                npy_DTYPE0 s[8];
-                s[0] = AX(DTYPE0, 0);
-                s[1] = AX(DTYPE0, 1);
-                s[2] = AX(DTYPE0, 2);
-                s[3] = AX(DTYPE0, 3);
-                s[4] = AX(DTYPE0, 4);
-                s[5] = AX(DTYPE0, 5);
-                s[6] = AX(DTYPE0, 6);
-                s[7] = AX(DTYPE0, 7);
-                for (i = 8; i < repeat; i += 8) {
-                    PREFETCH
-                    s[0] += AX(DTYPE0, i);
-                    s[1] += AX(DTYPE0, i + 1);
-                    s[2] += AX(DTYPE0, i + 2);
-                    s[3] += AX(DTYPE0, i + 3);
-                    s[4] += AX(DTYPE0, i + 4);
-                    s[5] += AX(DTYPE0, i + 5);
-                    s[6] += AX(DTYPE0, i + 6);
-                    s[7] += AX(DTYPE0, i + 7);
-                }
-                for (i = i; i < LENGTH; i++) {
-                    s[0] += AX(DTYPE0, i);
-                }
-                YPP = s[0] + s[1] + s[2] + s[3] + s[4] + s[5] + s[6] + s[7];
-                NEXT
-            }
-        }
-    }
-    return y;
-}
-/* dtype end */
-
-REDUCE_MAIN(NAME)
-/* repeat end */
 
 
 /* python strings -------------------------------------------------------- */
@@ -375,10 +351,6 @@ reducer(PyObject *args,
 static PyObject *
 reducer02(PyObject *args,
           PyObject *kwds,
-          fone_t ffast_float64,
-          fone_t ffast_float32,
-          fone_t ffast_int64,
-          fone_t ffast_int32,
           fnf_t f_float64,
           fnf_t f_float32,
           fnf_t f_int64,
@@ -388,7 +360,6 @@ reducer02(PyObject *args,
     int ndim;
     int axis;
     int dtype;
-    int fast;
     int min_axis;
 
     PyArrayObject *a;
@@ -451,13 +422,10 @@ reducer02(PyObject *args,
         }
     }
 
-    fast = 0;
     if (C_CONTIGUOUS(a) && axis == ndim - 1) {
-        fast = 1;
         min_axis = axis;
     }
     else if (F_CONTIGUOUS(a) && axis == 0) {
-        fast = 1;
         min_axis = axis;
     }
     else {
@@ -471,46 +439,24 @@ reducer02(PyObject *args,
                 min_axis = i;
             }
         }
-        if (min_axis == axis) {
-            fast = 1;
-        }
     }
 
     dtype = PyArray_TYPE(a);
 
-    if (fast) {
-        if (dtype == NPY_FLOAT64) {
-            return ffast_float64(a, axis);
-        }
-        else if (dtype == NPY_FLOAT32) {
-            return ffast_float32(a, axis);
-        }
-        else if (dtype == NPY_INT64) {
-            return ffast_int64(a, axis);
-        }
-        else if (dtype == NPY_INT32) {
-            return ffast_int32(a, axis);
-        }
-        else {
-            return PyArray_Sum(a, axis, dtype, NULL);
-        }
+    if (dtype == NPY_FLOAT64) {
+        return f_float64(a, axis, min_axis);
+    }
+    else if (dtype == NPY_FLOAT32) {
+        return f_float32(a, axis, min_axis);
+    }
+    else if (dtype == NPY_INT64) {
+        return f_int64(a, axis, min_axis);
+    }
+    else if (dtype == NPY_INT32) {
+        return f_int32(a, axis, min_axis);
     }
     else {
-        if (dtype == NPY_FLOAT64) {
-            return f_float64(a, axis, min_axis);
-        }
-        else if (dtype == NPY_FLOAT32) {
-            return f_float32(a, axis, min_axis);
-        }
-        else if (dtype == NPY_INT64) {
-            return f_int64(a, axis, min_axis);
-        }
-        else if (dtype == NPY_INT32) {
-            return f_int32(a, axis, min_axis);
-        }
-        else {
-            return PyArray_Sum(a, axis, dtype, NULL);
-        }
+        return PyArray_Sum(a, axis, dtype, NULL);
     }
 
 }
@@ -567,8 +513,6 @@ sums_methods[] = {
     {"sum00", (PyCFunction)sum00, VARKEY, sum_doc},
     {"sum01", (PyCFunction)sum01, VARKEY, sum_doc},
     {"sum02", (PyCFunction)sum02, VARKEY, sum_doc},
-    {"sum03", (PyCFunction)sum03, VARKEY, sum_doc},
-    {"sum04", (PyCFunction)sum04, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 
