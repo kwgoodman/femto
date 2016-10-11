@@ -117,6 +117,19 @@
     y = PyArray_EMPTY(NDIM - 1, SHAPE, NPY_##dtype0, 0); \
     py = (npy_##dtype1 *)PyArray_DATA((PyArrayObject *)y);
 
+#define INIT2(dtype0, dtype1) \
+    iter2 it; \
+    PyObject *y; \
+    int i, j=0, ndim = PyArray_NDIM(a); \
+    npy_intp shape[NPY_MAXDIMS]; \
+    for (i = 0; i < ndim; i++) { \
+        if (i != axis) { \
+            shape[j++] = PyArray_DIM(a, i); \
+        }  \
+    } \
+    y = PyArray_ZEROS(ndim - 1, shape, NPY_##dtype0, 0); \
+    init_iter2(&it, a, y, axis, min_axis); \
+
 #define REDUCE(name, dtype) \
     static PyObject * \
     name##_##dtype(PyArrayObject *a, int axis)
@@ -134,6 +147,7 @@
     }
 
 typedef PyObject *(*fone_t)(PyArrayObject *a, int axis);
+typedef PyObject *(*fnf_t)(PyArrayObject *a, int axis, int min_axis);
 
 static PyObject *
 reducer(PyObject *args,
@@ -142,3 +156,15 @@ reducer(PyObject *args,
         fone_t fone_float32,
         fone_t fone_int64,
         fone_t fone_int32);
+
+static PyObject *
+reducer02(PyObject *args,
+          PyObject *kwds,
+          fone_t fone_float64,
+          fone_t fone_float32,
+          fone_t fone_int64,
+          fone_t fone_int32,
+          fnf_t f_float64,
+          fnf_t f_float32,
+          fnf_t f_int64,
+          fnf_t f_int32);

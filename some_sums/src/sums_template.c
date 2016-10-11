@@ -96,9 +96,51 @@ REDUCE(sum01, DTYPE0)
 REDUCE_MAIN(sum01)
 
 
-/* sum02, sum03 ---------------------------------------------------------- */
+/* sum02 ----------------------------------------------------------------- */
 
-/* repeat = {'NAME': ['sum02', 'sum03'],
+/* add special casing for summing along non-fast axis */
+
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+static PyObject *
+sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+{
+    INIT2(DTYPE0, DTYPE0)
+    if (LENGTH == 0) {
+        char *py = PyArray_BYTES((PyArrayObject *)y);
+        FILL_Y(0)
+    }
+    else {
+        //memset(it.py, 0, PyArray_SIZE((PyArrayObject *)y) * sizeof(npy_DTYPE0));
+        WHILE {
+            FOR {
+                *(npy_DTYPE0 *)(it.py + it.i * it.ystride) += AI(DTYPE0);
+            }
+            NEXT2
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+static PyObject *
+sum02(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    return reducer02(args,
+                     kwds,
+                     sum01_float64,
+                     sum01_float32,
+                     sum01_int64,
+                     sum01_int32,
+                     sum02_float64,
+                     sum02_float32,
+                     sum02_int64,
+                     sum02_int32);
+}
+
+
+/* sum03, sum04 ---------------------------------------------------------- */
+
+/* repeat = {'NAME': ['sum03', 'sum04'],
              'PREFETCH': ['', 
              '__builtin_prefetch(it.pa + i * it.astride + 1024, 0, 3);']} */
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
@@ -238,10 +280,10 @@ parse_args(PyObject *args,
 static PyObject *
 reducer(PyObject *args,
         PyObject *kwds,
-        fone_t fone_float64,
-        fone_t fone_float32,
-        fone_t fone_int64,
-        fone_t fone_int32)
+        fone_t f_float64,
+        fone_t f_float32,
+        fone_t f_int64,
+        fone_t f_int32)
 {
 
     int ndim;
@@ -313,19 +355,162 @@ reducer(PyObject *args,
 
     /* we are reducing an array with ndim > 1 over a single axis */
     if (dtype == NPY_FLOAT64) {
-        return fone_float64(a, axis);
+        return f_float64(a, axis);
     }
     else if (dtype == NPY_FLOAT32) {
-        return fone_float32(a, axis);
+        return f_float32(a, axis);
     }
     else if (dtype == NPY_INT64) {
-        return fone_int64(a, axis);
+        return f_int64(a, axis);
     }
     else if (dtype == NPY_INT32) {
-        return fone_int32(a, axis);
+        return f_int32(a, axis);
     }
     else {
         return PyArray_Sum(a, axis, dtype, NULL);
+    }
+
+}
+
+static PyObject *
+reducer02(PyObject *args,
+          PyObject *kwds,
+          fone_t ffast_float64,
+          fone_t ffast_float32,
+          fone_t ffast_int64,
+          fone_t ffast_int32,
+          fnf_t f_float64,
+          fnf_t f_float32,
+          fnf_t f_int64,
+          fnf_t f_int32)
+{
+
+    int ndim;
+    int axis;
+    int dtype;
+    int fast;
+    int min_axis;
+
+    PyArrayObject *a;
+
+    PyObject *a_obj = NULL;
+    PyObject *axis_obj = NULL;
+
+    if (!parse_args(args, kwds, &a_obj, &axis_obj)) return NULL;
+
+    /* convert to array if necessary */
+    if PyArray_Check(a_obj) {
+        a = (PyArrayObject *)a_obj;
+    } else {
+        a = (PyArrayObject *)PyArray_FROM_O(a_obj);
+        if (a == NULL) {
+            return NULL;
+        }
+    }
+
+    /* check for byte swapped input array */
+    if PyArray_ISBYTESWAPPED(a) {
+        VALUE_ERR("Byte-swapped arrays are not supported");
+        return NULL;
+    }
+
+    /* does user want to reduce over all axes? */
+    ndim = PyArray_NDIM(a);
+    if (axis_obj == Py_None) {
+        VALUE_ERR("`axis` cannot be None");
+        return NULL;
+    }
+    else if (axis_obj == NULL) {
+        if (ndim < 2) {
+            VALUE_ERR("ndim must be > 1");
+            return NULL;
+        }
+        axis = PyArray_NDIM(a) - 1;
+    }
+    else {
+        axis = PyArray_PyIntAsInt(axis_obj);
+        if (error_converting(axis)) {
+            TYPE_ERR("`axis` must be an integer or None");
+            return NULL;
+        }
+        if (axis < 0) {
+            axis += ndim;
+            if (axis < 0) {
+                PyErr_Format(PyExc_ValueError,
+                             "axis(=%d) out of bounds", axis);
+                return NULL;
+            }
+        }
+        else if (axis >= ndim) {
+            PyErr_Format(PyExc_ValueError, "axis(=%d) out of bounds", axis);
+            return NULL;
+        }
+        if (ndim == 1) {
+            VALUE_ERR("ndim must be > 1");
+            return NULL;
+        }
+    }
+
+    fast = 0;
+    if (C_CONTIGUOUS(a) && axis == ndim - 1) {
+        fast = 1;
+        min_axis = axis;
+    }
+    else if (F_CONTIGUOUS(a) && axis == 0) {
+        fast = 1;
+        min_axis = axis;
+    }
+    else {
+        int i;
+        min_axis = 0;
+        npy_intp *strides = PyArray_STRIDES(a);
+        npy_intp min_stride = strides[0];
+        for (i = 1; i < ndim; i++) {
+            if (strides[i] < min_stride) {
+                min_stride = strides[i];
+                min_axis = i;
+            }
+        }
+        if (min_axis == axis) {
+            fast = 1;
+        }
+    }
+
+    dtype = PyArray_TYPE(a);
+
+    if (fast) {
+        if (dtype == NPY_FLOAT64) {
+            return ffast_float64(a, axis);
+        }
+        else if (dtype == NPY_FLOAT32) {
+            return ffast_float32(a, axis);
+        }
+        else if (dtype == NPY_INT64) {
+            return ffast_int64(a, axis);
+        }
+        else if (dtype == NPY_INT32) {
+            return ffast_int32(a, axis);
+        }
+        else {
+            return PyArray_Sum(a, axis, dtype, NULL);
+        }
+    }
+    else {
+        if (dtype == NPY_FLOAT64) {
+            return f_float64(a, axis, min_axis);
+        }
+        else if (dtype == NPY_FLOAT32) {
+            return f_float32(a, axis, min_axis);
+        }
+        else if (dtype == NPY_INT64) {
+            return f_int64(a, axis, min_axis);
+        }
+        else if (dtype == NPY_INT32) {
+            return f_int32(a, axis, min_axis);
+        }
+        else {
+            return PyArray_Sum(a, axis, dtype, NULL);
+        }
     }
 
 }
@@ -383,6 +568,7 @@ sums_methods[] = {
     {"sum01", (PyCFunction)sum01, VARKEY, sum_doc},
     {"sum02", (PyCFunction)sum02, VARKEY, sum_doc},
     {"sum03", (PyCFunction)sum03, VARKEY, sum_doc},
+    {"sum04", (PyCFunction)sum04, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 
