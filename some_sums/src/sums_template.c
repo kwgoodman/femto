@@ -111,36 +111,34 @@ sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
         if (LENGTH == 0) {
             FILL_Y(0)
         }
-        else {
-            if (LENGTH < 4) {
-                WHILE {
-                    asum = 0;
-                    FOR asum += AI(DTYPE0);
-                    YPP = asum;
-                    NEXT
-                }
+        else if (LENGTH < 4) {
+            WHILE {
+                asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
             }
-            else {
-                WHILE {
-                    Py_ssize_t i;
-                    Py_ssize_t repeat = LENGTH - LENGTH % 4;
-                    npy_DTYPE0 s[4];
-                    s[0] = AX(DTYPE0, 0);
-                    s[1] = AX(DTYPE0, 1);
-                    s[2] = AX(DTYPE0, 2);
-                    s[3] = AX(DTYPE0, 3);
-                    for (i = 4; i < repeat; i += 4) {
-                        s[0] += AX(DTYPE0, i);
-                        s[1] += AX(DTYPE0, i + 1);
-                        s[2] += AX(DTYPE0, i + 2);
-                        s[3] += AX(DTYPE0, i + 3);
-                    }
-                    for (i = i; i < LENGTH; i++) {
-                        s[0] += AX(DTYPE0, i);
-                    }
-                    YPP = s[0] + s[1] + s[2] + s[3];
-                    NEXT
+        }
+        else {
+            WHILE {
+                Py_ssize_t i;
+                Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                npy_DTYPE0 s[4];
+                s[0] = AX(DTYPE0, 0);
+                s[1] = AX(DTYPE0, 1);
+                s[2] = AX(DTYPE0, 2);
+                s[3] = AX(DTYPE0, 3);
+                for (i = 4; i < repeat; i += 4) {
+                    s[0] += AX(DTYPE0, i);
+                    s[1] += AX(DTYPE0, i + 1);
+                    s[2] += AX(DTYPE0, i + 2);
+                    s[3] += AX(DTYPE0, i + 3);
                 }
+                for (i = i; i < LENGTH; i++) {
+                    s[0] += AX(DTYPE0, i);
+                }
+                YPP = s[0] + s[1] + s[2] + s[3];
+                NEXT
             }
         }
     }
@@ -191,36 +189,34 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
         if (LENGTH == 0) {
             FILL_Y(0)
         }
-        else {
-            if (LENGTH < 4) {
-                WHILE {
-                    asum = 0;
-                    FOR asum += AI(DTYPE0);
-                    YPP = asum;
-                    NEXT
-                }
+        else if (LENGTH < 4) {
+            WHILE {
+                asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
             }
-            else {
-                WHILE {
-                    Py_ssize_t i;
-                    Py_ssize_t repeat = LENGTH - LENGTH % 4;
-                    npy_DTYPE0 s[4];
-                    s[0] = AX(DTYPE0, 0);
-                    s[1] = AX(DTYPE0, 1);
-                    s[2] = AX(DTYPE0, 2);
-                    s[3] = AX(DTYPE0, 3);
-                    for (i = 4; i < repeat; i += 4) {
-                        s[0] += AX(DTYPE0, i);
-                        s[1] += AX(DTYPE0, i + 1);
-                        s[2] += AX(DTYPE0, i + 2);
-                        s[3] += AX(DTYPE0, i + 3);
-                    }
-                    for (i = i; i < LENGTH; i++) {
-                        s[0] += AX(DTYPE0, i);
-                    }
-                    YPP = s[0] + s[1] + s[2] + s[3];
-                    NEXT
+        }
+        else {
+            WHILE {
+                Py_ssize_t i;
+                Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                npy_DTYPE0 s[4];
+                s[0] = AX(DTYPE0, 0);
+                s[1] = AX(DTYPE0, 1);
+                s[2] = AX(DTYPE0, 2);
+                s[3] = AX(DTYPE0, 3);
+                for (i = 4; i < repeat; i += 4) {
+                    s[0] += AX(DTYPE0, i);
+                    s[1] += AX(DTYPE0, i + 1);
+                    s[2] += AX(DTYPE0, i + 2);
+                    s[3] += AX(DTYPE0, i + 3);
                 }
+                for (i = i; i < LENGTH; i++) {
+                    s[0] += AX(DTYPE0, i);
+                }
+                YPP = s[0] + s[1] + s[2] + s[3];
+                NEXT
             }
         }
     }
@@ -230,32 +226,30 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
             char *py = PyArray_BYTES((PyArrayObject *)y);
             FILL_Y(0)
         }
-        else {
-            if (LENGTH < 4) {
-                WHILE {
-                    npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
-                    FOR {
-                        yy[it.i] += AI(DTYPE0);
-                    }
-                    NEXT2
+        else if (LENGTH < 4) {
+            WHILE {
+                npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
+                FOR {
+                    yy[it.i] += AI(DTYPE0);
                 }
+                NEXT2
             }
-            else {
-                npy_intp i;
-                Py_ssize_t repeat = LENGTH - LENGTH % 4;
-                WHILE {
-                    npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
-                    for (i = 0; i < repeat; i += 4) {
-                        yy[i] += AX(DTYPE0, i);
-                        yy[i + 1] += AX(DTYPE0, i + 1);
-                        yy[i + 2] += AX(DTYPE0, i + 2);
-                        yy[i + 3] += AX(DTYPE0, i + 3);
-                    }
-                    for (i = i; i < LENGTH; i++) {
-                        yy[i] += AX(DTYPE0, i);
-                    }
-                    NEXT2
+        }
+        else {
+            npy_intp i;
+            Py_ssize_t repeat = LENGTH - LENGTH % 4;
+            WHILE {
+                npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
+                for (i = 0; i < repeat; i += 4) {
+                    yy[i] += AX(DTYPE0, i);
+                    yy[i + 1] += AX(DTYPE0, i + 1);
+                    yy[i + 2] += AX(DTYPE0, i + 2);
+                    yy[i + 3] += AX(DTYPE0, i + 3);
                 }
+                for (i = i; i < LENGTH; i++) {
+                    yy[i] += AX(DTYPE0, i);
+                }
+                NEXT2
             }
         }
     }
