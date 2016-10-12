@@ -521,11 +521,11 @@ reducer02(PyObject *args,
         }
     }
 
-    if (C_CONTIGUOUS(a) && axis == ndim - 1) {
-        min_axis = axis;
+    if (C_CONTIGUOUS(a)) {
+        min_axis = ndim - 1;
     }
-    else if (F_CONTIGUOUS(a) && axis == 0) {
-        min_axis = axis;
+    else if (F_CONTIGUOUS(a)) {
+        min_axis = 0;
     }
     else {
         int i;
