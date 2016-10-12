@@ -25,6 +25,9 @@ def arrays(dtypes, name):
     nan = np.nan
     inf = np.inf
 
+    yield np.ones((2, 0))
+    yield np.ones((0, 2))
+
     # Automate a bunch of arrays to test
     ss = {}
     ss[0] = {'size': 12, 'shapes': [(2, 6), (3, 4)]}

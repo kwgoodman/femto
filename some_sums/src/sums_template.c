@@ -54,10 +54,55 @@ REDUCE(sum01, DTYPE0)
 {
     npy_DTYPE0 asum;
     INIT(DTYPE0, DTYPE0)
-    if (LENGTH == 0) {
-        FILL_Y(0)
+    if (LENGTH < 4) {
+        WHILE {
+            asum = 0;
+            FOR asum += AI(DTYPE0);
+            YPP = asum;
+            NEXT
+        }
     }
     else {
+        WHILE {
+            Py_ssize_t i;
+            Py_ssize_t repeat = LENGTH - LENGTH % 4;
+            npy_DTYPE0 s[4];
+            s[0] = AX(DTYPE0, 0);
+            s[1] = AX(DTYPE0, 1);
+            s[2] = AX(DTYPE0, 2);
+            s[3] = AX(DTYPE0, 3);
+            for (i = 4; i < repeat; i += 4) {
+                s[0] += AX(DTYPE0, i);
+                s[1] += AX(DTYPE0, i + 1);
+                s[2] += AX(DTYPE0, i + 2);
+                s[3] += AX(DTYPE0, i + 3);
+            }
+            for (i = i; i < LENGTH; i++) {
+                s[0] += AX(DTYPE0, i);
+            }
+            YPP = s[0] + s[1] + s[2] + s[3];
+            NEXT
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+REDUCE_MAIN(sum01)
+
+
+/* sum02 ----------------------------------------------------------------- */
+
+/* add special casing for summing along non-fast axis */
+
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+static PyObject *
+sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+{
+    PyObject *y;
+    if (axis == min_axis) {
+        npy_DTYPE0 asum;
+        INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
             WHILE {
                 asum = 0;
@@ -89,73 +134,14 @@ REDUCE(sum01, DTYPE0)
             }
         }
     }
-    return y;
-}
-/* dtype end */
-
-REDUCE_MAIN(sum01)
-
-
-/* sum02 ----------------------------------------------------------------- */
-
-/* add special casing for summing along non-fast axis */
-
-/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-static PyObject *
-sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
-{
-    PyObject *y;
-    if (axis == min_axis) {
-        npy_DTYPE0 asum;
-        INIT01(DTYPE0, DTYPE0)
-        if (LENGTH == 0) {
-            FILL_Y(0)
-        }
-        else if (LENGTH < 4) {
-            WHILE {
-                asum = 0;
-                FOR asum += AI(DTYPE0);
-                YPP = asum;
-                NEXT
-            }
-        }
-        else {
-            WHILE {
-                Py_ssize_t i;
-                Py_ssize_t repeat = LENGTH - LENGTH % 4;
-                npy_DTYPE0 s[4];
-                s[0] = AX(DTYPE0, 0);
-                s[1] = AX(DTYPE0, 1);
-                s[2] = AX(DTYPE0, 2);
-                s[3] = AX(DTYPE0, 3);
-                for (i = 4; i < repeat; i += 4) {
-                    s[0] += AX(DTYPE0, i);
-                    s[1] += AX(DTYPE0, i + 1);
-                    s[2] += AX(DTYPE0, i + 2);
-                    s[3] += AX(DTYPE0, i + 3);
-                }
-                for (i = i; i < LENGTH; i++) {
-                    s[0] += AX(DTYPE0, i);
-                }
-                YPP = s[0] + s[1] + s[2] + s[3];
-                NEXT
-            }
-        }
-    }
     else {
         INIT2(DTYPE0, DTYPE0)
-        if (LENGTH == 0) {
-            char *py = PyArray_BYTES((PyArrayObject *)y);
-            FILL_Y(0)
-        }
-        else {
-            WHILE {
-                npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
-                FOR {
-                    yy[it.i] += AI(DTYPE0);
-                }
-                NEXT2
+        WHILE {
+            npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
+            FOR {
+                yy[it.i] += AI(DTYPE0);
             }
+            NEXT2
         }
     }
     return y;
@@ -186,10 +172,7 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
     if (axis == min_axis) {
         npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
-        if (LENGTH == 0) {
-            FILL_Y(0)
-        }
-        else if (LENGTH < 4) {
+        if (LENGTH < 4) {
             WHILE {
                 asum = 0;
                 FOR asum += AI(DTYPE0);
@@ -222,11 +205,7 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
     }
     else {
         INIT2(DTYPE0, DTYPE0)
-        if (LENGTH == 0) {
-            char *py = PyArray_BYTES((PyArrayObject *)y);
-            FILL_Y(0)
-        }
-        else if (LENGTH < 4) {
+        if (LENGTH < 4) {
             WHILE {
                 npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
                 FOR {
