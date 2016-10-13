@@ -103,7 +103,6 @@ static BN_INLINE void
 init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int min_axis)
 {
     int i, j = 0;
-    int y_min_axis;
     const int ndim = PyArray_NDIM(a);
     const npy_intp *shape = PyArray_SHAPE(a);
     const npy_intp *astrides = PyArray_STRIDES(a);
@@ -119,17 +118,7 @@ init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int min_axis)
 
     it->astride = astrides[min_axis];
     it->length = shape[min_axis];
-    if (min_axis < axis) {
-        y_min_axis = min_axis;
-    }
-    else if (min_axis > axis) {
-        y_min_axis = min_axis - 1;
-    }
-    else {
-        printf("shit\n");
-        y_min_axis = min_axis;
-    }
-    it->ystride = ystrides[y_min_axis];
+    it->ystride = min_axis < axis ? ystrides[min_axis] : ystrides[min_axis - 1];
 
     j = 0;
     for (i = 0; i < ndim; i++) {

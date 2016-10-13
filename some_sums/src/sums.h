@@ -133,7 +133,12 @@
             shape[j++] = PyArray_DIM(a, i); \
         }  \
     } \
-    y = PyArray_ZEROS(ndim - 1, shape, NPY_##dtype0, 0); \
+    if (ndim > 2 && axis != min_axis && F_CONTIGUOUS(a)) { \
+        y = PyArray_ZEROS(ndim - 1, shape, NPY_##dtype0, 1); \
+    } \
+    else { \
+        y = PyArray_ZEROS(ndim - 1, shape, NPY_##dtype0, 0); \
+    } \
     init_iter2(&it, a, y, axis, min_axis); \
 
 #define REDUCE(name, dtype) \

@@ -52,6 +52,7 @@ def arrays(dtypes, name):
                 rs.shuffle(a)
                 for shape in shapes:
                     yield a.reshape(shape)
+                    yield a.reshape(shape).T
 
 
 def unit_maker(func, array_func, decimal=5):
