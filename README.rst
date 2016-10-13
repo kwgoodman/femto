@@ -28,20 +28,20 @@ suite::
     some_sums performance benchmark
         some_sums 0.0.1dev; Numpy 1.11.2
         Speed is NumPy time divided by some_sums time
-        Score is len(speeds)/sum([1.0/s for s in speeds])
+        Score is harmonic mean of speeds
 
             (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float64     int64     float64     int64
              axis=1     axis=0     axis=0     axis=1     axis=1     score
-    sum00     3.50       0.32       0.54       0.48       0.81       0.58
-    sum01     8.01       0.41       0.59       1.11       1.35       0.85
-    sum02     7.79       0.67       0.98       1.11       1.35       1.17
-    sum03     8.02       0.82       1.26       1.13       1.36       1.33
+    sum00     3.80       0.28       0.49       0.47       0.82       0.54
+    sum01     8.69       0.39       0.58       1.12       1.36       0.83
+    sum02     8.82       0.67       0.98       1.12       1.36       1.17
+    sum03     8.72       0.80       1.24       1.10       1.36       1.31
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
-isn't difficult to beat NumPy's performance. That's because some_sums has an
-unfair advantage. We will not duplicate the `pairwise summation`_ NumPy uses
-to deal with the accumulated round-off error in floating point arrays.
+should be possible to beat NumPy's performance. That's because some_sums has
+an unfair advantage. We will not duplicate the `pairwise summation`_ NumPy
+uses to deal with the accumulated round-off error in floating point arrays.
 
 The overall fastest function is the one with the highest benchmark score.
 Let's consider the case where we benchmark each function with two arrays
@@ -49,9 +49,9 @@ Let's consider the case where we benchmark each function with two arrays
 fast as NumPy) and 2.0 (twice as fast). What should the overall score be? Some
 possibilities are the mean (1.25, which is faster than NumPy), the geometric
 mean (1.0, same as NumPy), or the harmonic mean (0.8, slower). I chose the
-harmonic mean. If a program spends equal time summing the two benchmark
-arrays, each 1 unit of time, when using NumPy then it will take 1/2 + 2 units
-of time with some_sums, which is a speed of 2/2.5 = 0.8.
+harmonic mean. If a NumPy program spends equal time summing the two benchmark
+arrays, each 1 unit of time, then it will take 1/2 + 2 units of time with
+some_sums, which is a speed of 2/2.5 = 0.8.
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have

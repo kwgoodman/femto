@@ -47,7 +47,7 @@ def bench(shapes=[(1, 1000), (1000, 1000), (1000, 1000), (1000, 1000),
     print('some_sums performance benchmark')
     print("    some_sums %s; Numpy %s" % (ss.__version__, np.__version__))
     print("    Speed is NumPy time divided by some_sums time")
-    print("    Score is len(speeds)/sum([1.0/s for s in speeds])")
+    print("    Score is harmonic mean of speeds")
     print('')
     header = [" "*4]
     header = ["".join(str(shape).split(" ")).center(11) for shape in shapes]
