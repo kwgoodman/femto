@@ -33,10 +33,10 @@ suite::
             (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float64     int64     float64     int64
              axis=1     axis=0     axis=0     axis=1     axis=1     score
-    sum00     3.80       0.28       0.49       0.47       0.82       0.54
-    sum01     8.69       0.39       0.58       1.12       1.36       0.83
-    sum02     8.82       0.67       0.98       1.12       1.36       1.17
-    sum03     8.72       0.80       1.24       1.10       1.36       1.31
+    sum00     3.47       0.34       0.62       0.47       0.84       0.61
+    sum01     7.75       0.44       0.66       1.12       1.37       0.90
+    sum02     7.98       0.66       0.93       1.12       1.37       1.15
+    sum03     7.69       0.82       1.21       1.15       1.39       1.33
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
 should be possible to beat NumPy's performance. That's because some_sums has

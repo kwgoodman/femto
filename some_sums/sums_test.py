@@ -2,6 +2,7 @@
 
 import warnings
 import traceback
+from itertools import permutations
 
 from nose.tools import ok_
 import numpy as np
@@ -52,16 +53,15 @@ def arrays(dtypes, name):
                 rs.shuffle(a)
                 for shape in shapes:
                     yield a.reshape(shape)
-                    yield a.reshape(shape).T
 
 
 def unit_maker(func, array_func, decimal=5):
     "Test that ss.sumXX gives the same output as np.sum."
-    fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s\n'
+    fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s | order %s\n'
     fmt += '\nInput array:\n%s\n'
     name = func.__name__
     func0 = np.sum
-    for i, a in enumerate(array_func(DTYPES, name)):
+    for i, a in enumerate(array_iter(array_func, DTYPES, name)):
         axes = range(-1, a.ndim)
         for axis in axes:
             actual = 'Crashed'
@@ -83,7 +83,7 @@ def unit_maker(func, array_func, decimal=5):
                 pass
             else:
                 tup = (name, 'a'+str(i), str(a.dtype), str(a.shape),
-                       str(axis), a)
+                       str(axis), order_str(a), a)
                 err_msg = fmt % tup
                 if actualraised != desiredraised:
                     if actualraised:
@@ -129,20 +129,19 @@ def arrays_strides(dtypes=DTYPES):
 
 def unit_maker_strides(func, decimal=5):
     "Test that ss.sumXX gives the same output as np.sum."
-    fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s\n'
+    fmt = '\nfunc %s | input %s (%s) | shape %s | axis %s | order %s\n'
     fmt += '\nInput array:\n%s\n'
     fmt += '\nStrides: %s\n'
-    fmt += '\nFlags: \n%s\n'
     name = func.__name__
     func0 = np.sum
-    for i, a in enumerate(arrays_strides()):
+    for i, a in enumerate(array_iter(arrays_strides)):
         axes = range(-1, a.ndim)
         for axis in axes:
             # do not use a.copy() here because it will C order the array
             actual = func(a, axis=axis)
             desired = func0(a, axis=axis)
             tup = (name, 'a'+str(i), str(a.dtype), str(a.shape),
-                   str(axis), a, a.strides, a.flags)
+                   str(axis), order_str(a), a, a.strides)
             err_msg = fmt % tup
             assert_array_almost_equal(actual, desired, decimal, err_msg)
             err_msg += '\n dtype mismatch %s %s'
@@ -170,3 +169,30 @@ def unroll_arrays(dtypes, name):
                     yield a.reshape(2, -1)
                 else:
                     raise ValueError("`ndim` must be 2 or 3")
+
+
+# ---------------------------------------------------------------------------
+# utility functions
+
+def array_iter(arrays_func, *args):
+    for a in arrays_func(*args):
+        if a.ndim < 2:
+            yield a
+        elif a.ndim == 3:
+            for axes in permutations(range(a.ndim)):
+                yield np.transpose(a, axes)
+        else:
+            yield a
+            yield a.T
+
+
+def order_str(a):
+    f = a.flags
+    string = []
+    if f.c_contiguous:
+        string.append("C")
+    if f.f_contiguous:
+        string.append("F")
+    if len(string) == 0:
+        string.append("Neither")
+    return ", ".join(string)

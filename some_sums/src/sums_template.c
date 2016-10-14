@@ -137,9 +137,8 @@ sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
     else {
         INIT2(DTYPE0, DTYPE0)
         WHILE {
-            npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
             FOR {
-                yy[it.i] += AI(DTYPE0);
+                YI(DTYPE0) += AI(DTYPE0);
             }
             NEXT2
         }
@@ -207,9 +206,8 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
         INIT2(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
             WHILE {
-                npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
                 FOR {
-                    yy[it.i] += AI(DTYPE0);
+                    YI(DTYPE0) += AI(DTYPE0);
                 }
                 NEXT2
             }
@@ -218,15 +216,14 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
             npy_intp i;
             Py_ssize_t repeat = LENGTH - LENGTH % 4;
             WHILE {
-                npy_DTYPE0 *yy = (npy_DTYPE0 *)it.py;
                 for (i = 0; i < repeat; i += 4) {
-                    yy[i] += AX(DTYPE0, i);
-                    yy[i + 1] += AX(DTYPE0, i + 1);
-                    yy[i + 2] += AX(DTYPE0, i + 2);
-                    yy[i + 3] += AX(DTYPE0, i + 3);
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
+                    YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
+                    YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
+                    YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
                 }
                 for (i = i; i < LENGTH; i++) {
-                    yy[i] += AX(DTYPE0, i);
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
                 }
                 NEXT2
             }
