@@ -27,16 +27,11 @@ REDUCE(sum00, DTYPE0)
 {
     npy_DTYPE0 asum;
     INIT(DTYPE0, DTYPE0)
-    if (LENGTH == 0) {
-        FILL_Y(0)
-    }
-    else {
-        WHILE {
-            asum = 0;
-            FOR asum += AI(DTYPE0);
-            YPP = asum;
-            NEXT
-        }
+    WHILE {
+        asum = 0;
+        FOR asum += AI(DTYPE0);
+        YPP = asum;
+        NEXT
     }
     return y;
 }

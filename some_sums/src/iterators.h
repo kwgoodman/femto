@@ -179,7 +179,3 @@ init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int min_axis)
 #define  YPP            *py++
 #define  YI(dtype)      *(npy_##dtype *)(it.py + it.i * it.ystride)
 #define  YX(dtype, x)   *(npy_##dtype *)(it.py + (x) * it.ystride)
-#define  FILL_Y(value) \
-    int i; \
-    Py_ssize_t size = PyArray_SIZE((PyArrayObject *)y); \
-    for (i = 0; i < size; i++) YPP = value;
