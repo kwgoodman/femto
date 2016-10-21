@@ -27,7 +27,7 @@ def prepare_modules():
     ext = [Extension("some_sums.sums",
                      sources=["some_sums/src/sums.c"],
                      include_dirs=[],
-                     extra_compile_args=['-O2'])]
+                     extra_compile_args=['-O2', '-msse3'])]
     return ext
 
 

@@ -7,7 +7,7 @@ from numpy.testing import assert_array_almost_equal
 
 import some_sums as ss
 
-DTYPES = [np.float64, np.float32, np.int64, np.int32, np.float16]
+DTYPES = [np.float64, np.float32, np.int64, np.int32]
 
 
 def test_sums():
@@ -55,6 +55,7 @@ def array_iter(dtypes=DTYPES):
 
     yield np.ones((2, 0))
     yield np.ones((0, 2))
+    yield np.array([[1, 2, 3], [1, 2, 3]], dtype=np.float16)
 
     # automate a bunch of arrays to test
     shapes = [(2, 6), (3, 4), (2, 3, 4), (1, 2, 3, 4)]

@@ -17,6 +17,7 @@
 
 #include "sums.h"
 #include "iterators.h"
+#include <x86intrin.h>
 
 /* sum00 ----------------------------------------------------------------- */
 
@@ -237,6 +238,191 @@ sum03(PyObject *self, PyObject *args, PyObject *kwds)
                      sum03_float32,
                      sum03_int64,
                      sum03_int32);
+}
+
+
+/* sum04 ----------------------------------------------------------------- */
+
+/* loop unrolling of special casing for summing along non-fast axis */
+
+/* copied from numpy */
+static NPY_INLINE npy_uintp
+npy_aligned_block_offset(const void * addr, const npy_uintp esize,
+                         const npy_uintp alignment, const npy_uintp nvals)
+{
+    const npy_uintp offset = (npy_uintp)addr & (alignment - 1);
+    npy_uintp peel = offset ? (alignment - offset) / esize : 0;
+    peel = nvals < peel ? nvals : peel;
+    return peel;
+}
+
+/* dtype = [['float64']] */
+static PyObject *
+sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+{
+    PyObject *y;
+    if (axis == min_axis) {
+        npy_DTYPE0 asum;
+        INIT01(DTYPE0, DTYPE0)
+        if (LENGTH < 4 || !IS_CONTIGUOUS(a)) {
+            WHILE {
+                asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
+            }
+        }
+        else {
+            Py_ssize_t repeat = LENGTH - LENGTH % 8;
+            WHILE {
+                npy_intp i;
+                double sum = 0.0;
+                double sum_peel = 0.0;
+                __m128d vsum0 = _mm_set1_pd(0.0);
+                __m128d vsum1 = _mm_set1_pd(0.0);
+                __m128d vsum2 = _mm_set1_pd(0.0);
+                __m128d vsum3 = _mm_set1_pd(0.0);
+                double *ad = (double *)it.pa;
+                npy_uintp peel = npy_aligned_block_offset(ad, sizeof(double), 16, LENGTH);
+                i = 0;
+                for (; i < peel; i++) {
+                    sum_peel += ad[i];
+                }
+                for (; i < repeat + peel; i += 8)
+                {
+                    __m128d v0 = _mm_load_pd(&ad[i]);
+                    __m128d v1 = _mm_load_pd(&ad[i + 2]);
+                    __m128d v2 = _mm_load_pd(&ad[i + 4]);
+                    __m128d v3 = _mm_load_pd(&ad[i + 6]);
+                    vsum0 = _mm_add_pd(vsum0, v0);
+                    vsum1 = _mm_add_pd(vsum1, v1);
+                    vsum2 = _mm_add_pd(vsum2, v2);
+                    vsum3 = _mm_add_pd(vsum3, v3);
+                }
+                vsum0 = _mm_add_pd(vsum0, vsum1);
+                vsum1 = _mm_add_pd(vsum2, vsum3);
+                vsum0 = _mm_hadd_pd(vsum0, vsum1);
+                vsum0 = _mm_hadd_pd(vsum0, vsum0);
+                _mm_storeh_pd(&sum, vsum0);
+                for (; i < LENGTH; i++) {
+                    sum += ad[i];
+                }
+                sum += sum_peel;
+                YPP = sum;
+                NEXT
+            }
+        }
+    }
+    else {
+        INIT2(DTYPE0, DTYPE0)
+        if (LENGTH < 4) {
+            WHILE {
+                FOR {
+                    YI(DTYPE0) += AI(DTYPE0);
+                }
+                NEXT2
+            }
+        }
+        else {
+            npy_intp i;
+            Py_ssize_t repeat = LENGTH - LENGTH % 4;
+            WHILE {
+                for (i = 0; i < repeat; i += 4) {
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
+                    YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
+                    YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
+                    YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
+                }
+                for (i = i; i < LENGTH; i++) {
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
+                }
+                NEXT2
+            }
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+/* dtype = [['float32'], ['int64'], ['int32']] */
+static PyObject *
+sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+{
+    PyObject *y;
+    if (axis == min_axis) {
+        npy_DTYPE0 asum;
+        INIT01(DTYPE0, DTYPE0)
+        if (LENGTH < 4) {
+            WHILE {
+                asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
+            }
+        }
+        else {
+            WHILE {
+                Py_ssize_t i;
+                Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                npy_DTYPE0 s[4];
+                s[0] = AX(DTYPE0, 0);
+                s[1] = AX(DTYPE0, 1);
+                s[2] = AX(DTYPE0, 2);
+                s[3] = AX(DTYPE0, 3);
+                for (i = 4; i < repeat; i += 4) {
+                    s[0] += AX(DTYPE0, i);
+                    s[1] += AX(DTYPE0, i + 1);
+                    s[2] += AX(DTYPE0, i + 2);
+                    s[3] += AX(DTYPE0, i + 3);
+                }
+                for (i = i; i < LENGTH; i++) {
+                    s[0] += AX(DTYPE0, i);
+                }
+                YPP = s[0] + s[1] + s[2] + s[3];
+                NEXT
+            }
+        }
+    }
+    else {
+        INIT2(DTYPE0, DTYPE0)
+        if (LENGTH < 4) {
+            WHILE {
+                FOR {
+                    YI(DTYPE0) += AI(DTYPE0);
+                }
+                NEXT2
+            }
+        }
+        else {
+            npy_intp i;
+            Py_ssize_t repeat = LENGTH - LENGTH % 4;
+            WHILE {
+                for (i = 0; i < repeat; i += 4) {
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
+                    YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
+                    YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
+                    YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
+                }
+                for (i = i; i < LENGTH; i++) {
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
+                }
+                NEXT2
+            }
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+static PyObject *
+sum04(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    return reducer02(args,
+                     kwds,
+                     sum04_float64,
+                     sum04_float32,
+                     sum04_int64,
+                     sum04_int32);
 }
 
 
@@ -578,6 +764,7 @@ sums_methods[] = {
     {"sum01", (PyCFunction)sum01, VARKEY, sum_doc},
     {"sum02", (PyCFunction)sum02, VARKEY, sum_doc},
     {"sum03", (PyCFunction)sum03, VARKEY, sum_doc},
+    {"sum04", (PyCFunction)sum04, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 
