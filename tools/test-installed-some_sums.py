@@ -40,6 +40,8 @@ parser.add_option("-m", "--mode",
                        "passed to nosetests -A [default: %default]")
 (options, args) = parser.parse_args()
 
+some_sums.bench()
+
 result = some_sums.test(options.mode,
                         verbose=options.verbose,
                         extra_argv=args,
