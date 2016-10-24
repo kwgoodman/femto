@@ -245,14 +245,12 @@ sum03(PyObject *self, PyObject *args, PyObject *kwds)
 
 /* loop unrolling of special casing for summing along non-fast axis */
 
-/* copied from numpy */
-static NPY_INLINE npy_uintp
-npy_aligned_block_offset(const void * addr, const npy_uintp esize,
-                         const npy_uintp alignment, const npy_uintp nvals)
+/* copied from numpy; modified; do not use if LENGTH < peel possible */
+static BN_INLINE npy_uintp
+calc_peel(const void * addr, const npy_uintp esize, const npy_uintp alignment)
 {
     const npy_uintp offset = (npy_uintp)addr & (alignment - 1);
     npy_uintp peel = offset ? (alignment - offset) / esize : 0;
-    peel = nvals < peel ? nvals : peel;
     return peel;
 }
 
@@ -264,7 +262,8 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
     if (axis == min_axis) {
         npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
-        if (LENGTH < 4 || !IS_CONTIGUOUS(a)) {
+        if (!IS_CONTIGUOUS(a)) {
+            /* could loop unroll here */
             WHILE {
                 asum = 0;
                 FOR asum += AI(DTYPE0);
@@ -273,22 +272,22 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
             }
         }
         else {
-            Py_ssize_t repeat = LENGTH - LENGTH % 8;
+            Py_ssize_t i_simd = LENGTH - LENGTH % 8;
             WHILE {
                 npy_intp i;
                 double sum = 0.0;
-                double sum_peel = 0.0;
+                double sum_simd = 0.0;
                 __m128d vsum0 = _mm_set1_pd(0.0);
                 __m128d vsum1 = _mm_set1_pd(0.0);
                 __m128d vsum2 = _mm_set1_pd(0.0);
                 __m128d vsum3 = _mm_set1_pd(0.0);
                 double *ad = (double *)it.pa;
-                npy_uintp peel = npy_aligned_block_offset(ad, sizeof(double), 16, LENGTH);
+                npy_uintp peel = calc_peel(ad, sizeof(double), 16);
                 i = 0;
                 for (; i < peel; i++) {
-                    sum_peel += ad[i];
+                    sum += ad[i];
                 }
-                for (; i < repeat + peel; i += 8)
+                for (; i < i_simd + peel; i += 8)
                 {
                     __m128d v0 = _mm_load_pd(&ad[i]);
                     __m128d v1 = _mm_load_pd(&ad[i + 2]);
@@ -301,14 +300,13 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
                 }
                 vsum0 = _mm_add_pd(vsum0, vsum1);
                 vsum1 = _mm_add_pd(vsum2, vsum3);
-                vsum0 = _mm_hadd_pd(vsum0, vsum1);
+                vsum0 = _mm_add_pd(vsum0, vsum1);
                 vsum0 = _mm_hadd_pd(vsum0, vsum0);
-                _mm_storeh_pd(&sum, vsum0);
+                _mm_storeh_pd(&sum_simd, vsum0);
                 for (; i < LENGTH; i++) {
                     sum += ad[i];
                 }
-                sum += sum_peel;
-                YPP = sum;
+                YPP = sum + sum_simd;
                 NEXT
             }
         }
