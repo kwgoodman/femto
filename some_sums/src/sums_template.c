@@ -262,7 +262,7 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
     if (axis == min_axis) {
         npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
-        if (!IS_CONTIGUOUS(a)) {
+        if (LENGTH < 9 || !IS_CONTIGUOUS(a)) {
             /* could loop unroll here */
             WHILE {
                 asum = 0;
@@ -274,20 +274,19 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
         else {
             Py_ssize_t i_simd = LENGTH - LENGTH % 8;
             WHILE {
-                npy_intp i;
+                npy_intp i = 0;
                 double sum = 0.0;
                 double sum_simd = 0.0;
-                __m128d vsum0 = _mm_set1_pd(0.0);
-                __m128d vsum1 = _mm_set1_pd(0.0);
-                __m128d vsum2 = _mm_set1_pd(0.0);
-                __m128d vsum3 = _mm_set1_pd(0.0);
                 double *ad = (double *)it.pa;
+                __m128d vsum0, vsum1, vsum2, vsum3;
                 npy_uintp peel = calc_peel(ad, sizeof(double), 16);
-                i = 0;
-                for (; i < peel; i++) {
+                for (; i < peel; i++)
                     sum += ad[i];
-                }
-                for (; i < i_simd + peel; i += 8)
+                vsum0 = _mm_load_pd(&ad[peel + 0]);
+                vsum1 = _mm_load_pd(&ad[peel + 2]);
+                vsum2 = _mm_load_pd(&ad[peel + 4]);
+                vsum3 = _mm_load_pd(&ad[peel + 6]);
+                for (i = i + 8; i < i_simd + peel; i += 8)
                 {
                     __m128d v0 = _mm_load_pd(&ad[i]);
                     __m128d v1 = _mm_load_pd(&ad[i + 2]);
@@ -303,9 +302,8 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
                 vsum0 = _mm_add_pd(vsum0, vsum1);
                 vsum0 = _mm_hadd_pd(vsum0, vsum0);
                 _mm_storeh_pd(&sum_simd, vsum0);
-                for (; i < LENGTH; i++) {
+                for (; i < LENGTH; i++)
                     sum += ad[i];
-                }
                 YPP = sum + sum_simd;
                 NEXT
             }
