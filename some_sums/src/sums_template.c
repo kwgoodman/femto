@@ -93,10 +93,10 @@ REDUCE_MAIN(sum01)
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 static PyObject *
-sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+sum02_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
-    if (axis == min_axis) {
+    if (axis == fast_axis) {
         npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
@@ -161,10 +161,10 @@ sum02(PyObject *self, PyObject *args, PyObject *kwds)
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 static PyObject *
-sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+sum03_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
-    if (axis == min_axis) {
+    if (axis == fast_axis) {
         npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
@@ -256,10 +256,10 @@ calc_peel(const void * addr, const npy_uintp esize, const npy_uintp alignment)
 
 /* dtype = [['float64']] */
 static PyObject *
-sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
-    if (axis == min_axis) {
+    if (axis == fast_axis) {
         npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 9 || !IS_CONTIGUOUS(a)) {
@@ -374,10 +374,10 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
 
 /* dtype = [['float32'], ['int64'], ['int32']] */
 static PyObject *
-sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
+sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
-    if (axis == min_axis) {
+    if (axis == fast_axis) {
         npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
@@ -638,7 +638,7 @@ reducer02(PyObject *args,
     int ndim;
     int axis;
     int dtype;
-    int min_axis;
+    int fast_axis;
 
     PyArrayObject *a;
 
@@ -701,20 +701,20 @@ reducer02(PyObject *args,
     }
 
     if (C_CONTIGUOUS(a)) {
-        min_axis = ndim - 1;
+        fast_axis = ndim - 1;
     }
     else if (F_CONTIGUOUS(a)) {
-        min_axis = 0;
+        fast_axis = 0;
     }
     else {
         int i;
-        min_axis = 0;
+        fast_axis = 0;
         npy_intp *strides = PyArray_STRIDES(a);
         npy_intp min_stride = strides[0];
         for (i = 1; i < ndim; i++) {
             if (strides[i] < min_stride) {
                 min_stride = strides[i];
-                min_axis = i;
+                fast_axis = i;
             }
         }
     }
@@ -722,16 +722,16 @@ reducer02(PyObject *args,
     dtype = PyArray_TYPE(a);
 
     if (dtype == NPY_FLOAT64) {
-        return f_float64(a, axis, min_axis);
+        return f_float64(a, axis, fast_axis);
     }
     else if (dtype == NPY_FLOAT32) {
-        return f_float32(a, axis, min_axis);
+        return f_float32(a, axis, fast_axis);
     }
     else if (dtype == NPY_INT64) {
-        return f_int64(a, axis, min_axis);
+        return f_int64(a, axis, fast_axis);
     }
     else if (dtype == NPY_INT32) {
-        return f_int32(a, axis, min_axis);
+        return f_int32(a, axis, fast_axis);
     }
     else {
         return PyArray_Sum(a, axis, dtype, NULL);

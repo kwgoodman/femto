@@ -133,13 +133,13 @@
             shape[j++] = PyArray_DIM(a, i); \
         }  \
     } \
-    if (ndim > 2 && axis != min_axis && F_CONTIGUOUS(a)) { \
+    if (ndim > 2 && axis != fast_axis && F_CONTIGUOUS(a)) { \
         y = PyArray_ZEROS(ndim - 1, shape, NPY_##dtype0, 1); \
     } \
     else { \
         y = PyArray_ZEROS(ndim - 1, shape, NPY_##dtype0, 0); \
     } \
-    init_iter2(&it, a, y, axis, min_axis); \
+    init_iter2(&it, a, y, axis, fast_axis); \
 
 #define REDUCE(name, dtype) \
     static PyObject * \
@@ -158,7 +158,7 @@
     }
 
 typedef PyObject *(*fone_t)(PyArrayObject *a, int axis);
-typedef PyObject *(*fnf_t)(PyArrayObject *a, int axis, int min_axis);
+typedef PyObject *(*fnf_t)(PyArrayObject *a, int axis, int fast_axis);
 
 static PyObject *
 reducer(PyObject *args,

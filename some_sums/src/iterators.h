@@ -83,7 +83,7 @@ init_iter(iter *it, PyArrayObject *a, int axis)
 struct _iter2 {
     int        ndim;
     int        axis;
-    int        min_axis;
+    int        fast_axis;
     Py_ssize_t length;
     Py_ssize_t astride;
     Py_ssize_t ystride;
@@ -100,7 +100,7 @@ struct _iter2 {
 typedef struct _iter2 iter2;
 
 static BN_INLINE void
-init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int min_axis)
+init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int fast_axis)
 {
     int i, j = 0;
     const int ndim = PyArray_NDIM(a);
@@ -109,16 +109,17 @@ init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int min_axis)
     const npy_intp *ystrides = PyArray_STRIDES((PyArrayObject *)y);
 
     it->axis = axis;
-    it->min_axis = min_axis;
+    it->fast_axis = fast_axis;
     it->its = 0;
     it->nits = 1;
     it->ndim = ndim;
     it->pa = PyArray_BYTES(a);
     it->py = PyArray_BYTES((PyArrayObject *)y);
 
-    it->astride = astrides[min_axis];
-    it->length = shape[min_axis];
-    it->ystride = min_axis < axis ? ystrides[min_axis] : ystrides[min_axis - 1];
+    it->astride = astrides[fast_axis];
+    it->length = shape[fast_axis];
+    it->ystride = fast_axis < axis ? 
+                  ystrides[fast_axis] : ystrides[fast_axis - 1];
 
     j = 0;
     for (i = 0; i < ndim; i++) {
@@ -130,7 +131,7 @@ init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int min_axis)
             it->ystrides[i] = ystrides[j++];
         }
         it->shape[i] = shape[i];
-        if (i != min_axis) {
+        if (i != fast_axis) {
             it->nits *= shape[i];
         }
     }
@@ -138,7 +139,7 @@ init_iter2(iter2 *it, PyArrayObject *a, PyObject *y, int axis, int min_axis)
 
 #define NEXT2 \
     for (it.i = it.ndim-1; it.i > -1; it.i--) { \
-        if (it.i == it.min_axis) continue; \
+        if (it.i == it.fast_axis) continue; \
         if (it.i == it.axis) { \
             if (it.indices[it.i] < it.shape[it.i] - 1) { \
                 it.pa += it.astrides[it.i]; \

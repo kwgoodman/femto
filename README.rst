@@ -18,8 +18,8 @@ require different optimizations.
 My goal is to find fast ways to implement reduction functions (sum, mean,
 std, max, nansum, etc.) that are bound by memory I/O. I chose summation as a
 test case because very little time is spent with arithmetic which makes it
-easier to measure improvements from things like manual loop unrolling,
-software prefetching of data, and parallel processing.
+easier to measure improvements from things like manual loop unrolling (sum01,
+sum02, sum03), SIMD (sum04), and parallel processing (not yet implemented).
 
 some_sums is based on code from `bottleneck`_. It comes with a benchmark
 suite::
