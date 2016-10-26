@@ -243,7 +243,7 @@ sum03(PyObject *self, PyObject *args, PyObject *kwds)
 
 /* sum04 ----------------------------------------------------------------- */
 
-/* loop unrolling of special casing for summing along non-fast axis */
+/* simd */
 
 /* copied from numpy; modified; do not use if LENGTH < peel possible */
 static BN_INLINE npy_uintp
@@ -311,7 +311,7 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
     }
     else {
         INIT2(DTYPE0, DTYPE0)
-        if (LENGTH < 4) {
+        if (LENGTH < 9) {
             WHILE {
                 FOR {
                     YI(DTYPE0) += AI(DTYPE0);
@@ -320,19 +320,52 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
             }
         }
         else {
-            npy_intp i;
-            Py_ssize_t repeat = LENGTH - LENGTH % 4;
-            WHILE {
-                for (i = 0; i < repeat; i += 4) {
-                    YX(DTYPE0, i) += AX(DTYPE0, i);
-                    YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
-                    YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
-                    YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
+            if (!IS_CONTIGUOUS(a) || LENGTH & 1 || (npy_uintp)it.pa & 15) {
+                npy_intp i;
+                Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                WHILE {
+                    for (i = 0; i < repeat; i += 4) {
+                        YX(DTYPE0, i) += AX(DTYPE0, i);
+                        YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
+                        YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
+                        YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
+                    }
+                    for (i = i; i < LENGTH; i++) {
+                        YX(DTYPE0, i) += AX(DTYPE0, i);
+                    }
+                    NEXT2
                 }
-                for (i = i; i < LENGTH; i++) {
-                    YX(DTYPE0, i) += AX(DTYPE0, i);
+            }
+            else {
+                Py_ssize_t i_simd = LENGTH - LENGTH % 8;
+                WHILE {
+                    npy_intp i = 0;
+                    double *ad = (double *)it.pa;
+                    double *yd = (double *)it.py;
+                    npy_uintp peel = calc_peel(ad, sizeof(double), 16);
+                    for (; i < peel; i++)
+                        yd[i] += ad[i];
+                    for (; i < i_simd + peel; i += 8)
+                    {
+                        __m128d a0 = _mm_load_pd(&ad[i]);
+                        __m128d a1 = _mm_load_pd(&ad[i + 2]);
+                        __m128d a2 = _mm_load_pd(&ad[i + 4]);
+                        __m128d a3 = _mm_load_pd(&ad[i + 6]);
+
+                        __m128d y0 = _mm_load_pd(&yd[i]);
+                        __m128d y1 = _mm_load_pd(&yd[i + 2]);
+                        __m128d y2 = _mm_load_pd(&yd[i + 4]);
+                        __m128d y3 = _mm_load_pd(&yd[i + 6]);
+
+                        _mm_store_pd(&yd[i],     _mm_add_pd(y0, a0));
+                        _mm_store_pd(&yd[i + 2], _mm_add_pd(y1, a1));
+                        _mm_store_pd(&yd[i + 4], _mm_add_pd(y2, a2));
+                        _mm_store_pd(&yd[i + 6], _mm_add_pd(y3, a3));
+                    }
+                    for (; i < LENGTH; i++)
+                        yd[i] += ad[i];
+                    NEXT2
                 }
-                NEXT2
             }
         }
     }
