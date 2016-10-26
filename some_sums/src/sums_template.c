@@ -60,20 +60,20 @@ REDUCE(sum01, DTYPE0)
     }
     else {
         WHILE {
-            Py_ssize_t i;
             Py_ssize_t repeat = LENGTH - LENGTH % 4;
             npy_DTYPE0 s[4];
             s[0] = AX(DTYPE0, 0);
             s[1] = AX(DTYPE0, 1);
             s[2] = AX(DTYPE0, 2);
             s[3] = AX(DTYPE0, 3);
-            for (i = 4; i < repeat; i += 4) {
+            Py_ssize_t i = 4;
+            for (; i < repeat; i += 4) {
                 s[0] += AX(DTYPE0, i);
                 s[1] += AX(DTYPE0, i + 1);
                 s[2] += AX(DTYPE0, i + 2);
                 s[3] += AX(DTYPE0, i + 3);
             }
-            for (i = i; i < LENGTH; i++) {
+            for (; i < LENGTH; i++) {
                 s[0] += AX(DTYPE0, i);
             }
             YPP = s[0] + s[1] + s[2] + s[3];
@@ -109,20 +109,20 @@ sum02_DTYPE0(PyArrayObject *a, int axis, int min_axis)
         }
         else {
             WHILE {
-                Py_ssize_t i;
                 Py_ssize_t repeat = LENGTH - LENGTH % 4;
                 npy_DTYPE0 s[4];
                 s[0] = AX(DTYPE0, 0);
                 s[1] = AX(DTYPE0, 1);
                 s[2] = AX(DTYPE0, 2);
                 s[3] = AX(DTYPE0, 3);
-                for (i = 4; i < repeat; i += 4) {
+                Py_ssize_t i = 4;
+                for (; i < repeat; i += 4) {
                     s[0] += AX(DTYPE0, i);
                     s[1] += AX(DTYPE0, i + 1);
                     s[2] += AX(DTYPE0, i + 2);
                     s[3] += AX(DTYPE0, i + 3);
                 }
-                for (i = i; i < LENGTH; i++) {
+                for (; i < LENGTH; i++) {
                     s[0] += AX(DTYPE0, i);
                 }
                 YPP = s[0] + s[1] + s[2] + s[3];
@@ -177,20 +177,20 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
         }
         else {
             WHILE {
-                Py_ssize_t i;
                 Py_ssize_t repeat = LENGTH - LENGTH % 4;
                 npy_DTYPE0 s[4];
                 s[0] = AX(DTYPE0, 0);
                 s[1] = AX(DTYPE0, 1);
                 s[2] = AX(DTYPE0, 2);
                 s[3] = AX(DTYPE0, 3);
-                for (i = 4; i < repeat; i += 4) {
+                Py_ssize_t i = 4;
+                for (; i < repeat; i += 4) {
                     s[0] += AX(DTYPE0, i);
                     s[1] += AX(DTYPE0, i + 1);
                     s[2] += AX(DTYPE0, i + 2);
                     s[3] += AX(DTYPE0, i + 3);
                 }
-                for (i = i; i < LENGTH; i++) {
+                for (; i < LENGTH; i++) {
                     s[0] += AX(DTYPE0, i);
                 }
                 YPP = s[0] + s[1] + s[2] + s[3];
@@ -209,16 +209,16 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int min_axis)
             }
         }
         else {
-            npy_intp i;
             Py_ssize_t repeat = LENGTH - LENGTH % 4;
             WHILE {
-                for (i = 0; i < repeat; i += 4) {
+                npy_intp i = 0;
+                for (; i < repeat; i += 4) {
                     YX(DTYPE0, i) += AX(DTYPE0, i);
                     YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
                     YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
                     YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
                 }
-                for (i = i; i < LENGTH; i++) {
+                for (; i < LENGTH; i++) {
                     YX(DTYPE0, i) += AX(DTYPE0, i);
                 }
                 NEXT2
@@ -272,14 +272,14 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
             }
         }
         else {
-            Py_ssize_t i_simd = LENGTH - LENGTH % 8;
+            const Py_ssize_t i_simd = LENGTH - LENGTH % 8;
             WHILE {
-                npy_intp i = 0;
                 double sum = 0.0;
                 double sum_simd = 0.0;
                 double *ad = (double *)it.pa;
                 __m128d vsum0, vsum1, vsum2, vsum3;
                 npy_uintp peel = calc_peel(ad, sizeof(double), 16);
+                npy_intp i = 0;
                 for (; i < peel; i++)
                     sum += ad[i];
                 vsum0 = _mm_load_pd(&ad[peel + 0]);
@@ -302,8 +302,9 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
                 vsum0 = _mm_add_pd(vsum0, vsum1);
                 vsum0 = _mm_hadd_pd(vsum0, vsum0);
                 _mm_storeh_pd(&sum_simd, vsum0);
-                for (; i < LENGTH; i++)
+                for (; i < LENGTH; i++) {
                     sum += ad[i];
+                }
                 YPP = sum + sum_simd;
                 NEXT
             }
@@ -321,31 +322,28 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
         }
         else {
             if (!IS_CONTIGUOUS(a) || LENGTH & 1 || (npy_uintp)it.pa & 15) {
-                npy_intp i;
-                Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                const Py_ssize_t repeat = LENGTH - LENGTH % 4;
                 WHILE {
-                    for (i = 0; i < repeat; i += 4) {
+                    npy_intp i = 0;
+                    for (; i < repeat; i += 4) {
                         YX(DTYPE0, i) += AX(DTYPE0, i);
                         YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
                         YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
                         YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
                     }
-                    for (i = i; i < LENGTH; i++) {
+                    for (; i < LENGTH; i++) {
                         YX(DTYPE0, i) += AX(DTYPE0, i);
                     }
                     NEXT2
                 }
             }
             else {
-                Py_ssize_t i_simd = LENGTH - LENGTH % 8;
+                const Py_ssize_t i_simd = LENGTH - LENGTH % 8;
                 WHILE {
-                    npy_intp i = 0;
                     double *ad = (double *)it.pa;
                     double *yd = (double *)it.py;
-                    npy_uintp peel = calc_peel(ad, sizeof(double), 16);
-                    for (; i < peel; i++)
-                        yd[i] += ad[i];
-                    for (; i < i_simd + peel; i += 8)
+                    npy_intp i = 0;
+                    for (; i < i_simd; i += 8)
                     {
                         __m128d a0 = _mm_load_pd(&ad[i]);
                         __m128d a1 = _mm_load_pd(&ad[i + 2]);
@@ -362,8 +360,9 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int min_axis)
                         _mm_store_pd(&yd[i + 4], _mm_add_pd(y2, a2));
                         _mm_store_pd(&yd[i + 6], _mm_add_pd(y3, a3));
                     }
-                    for (; i < LENGTH; i++)
+                    for (; i < LENGTH; i++) {
                         yd[i] += ad[i];
+                    }
                     NEXT2
                 }
             }
