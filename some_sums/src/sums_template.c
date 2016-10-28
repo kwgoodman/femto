@@ -660,6 +660,45 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
                      sum05_int32);
 }
 
+/* sum06 ----------------------------------------------------------------- */
+
+/* OpenMP */
+
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE(sum06, DTYPE0)
+{
+    npy_intp its;
+    npy_DTYPE0 asum;
+    char *pa = PyArray_BYTES(a);
+    iter it;
+    PyObject *y;
+    npy_DTYPE0 *py;
+    init_iter(&it, a, axis);
+    y = PyArray_EMPTY(NDIM - 1, SHAPE, NPY_DTYPE0, 0);
+    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    for (its = 0; its < it.nits; its++) {
+        asum = 0;
+        npy_intp i;
+        for (i = 0; i < it.length; i++) {
+            asum += *(npy_DTYPE0 *)(pa + i * it.astride);
+        }
+        py[its] = asum;
+        for (i = it.ndim_m2; i > -1; i--) {
+            if (it.indices[i] < it.shape[i] - 1) {
+                pa += it.astrides[i];
+                it.indices[i]++;
+                break;
+            }
+            pa -= it.indices[i] * it.astrides[i];
+            it.indices[i] = 0;
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+REDUCE_MAIN(sum06)
+
 
 /* python strings -------------------------------------------------------- */
 
@@ -1001,6 +1040,7 @@ sums_methods[] = {
     {"sum03", (PyCFunction)sum03, VARKEY, sum_doc},
     {"sum04", (PyCFunction)sum04, VARKEY, sum_doc},
     {"sum05", (PyCFunction)sum05, VARKEY, sum_doc},
+    {"sum06", (PyCFunction)sum06, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 
