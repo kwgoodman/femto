@@ -93,7 +93,7 @@ def array_iter(dtypes=DTYPES):
     # test loop unrolling
     for ndim in (2,):
         rs = np.random.RandomState(ndim)
-        for length in range(20):
+        for length in range(25):
             for dtype in dtypes:
                 if ndim == 2:
                     a = np.arange(length * 2, dtype=dtype)
@@ -101,6 +101,11 @@ def array_iter(dtypes=DTYPES):
                     yield a.reshape(2, -1)
                 else:
                     raise ValueError("`ndim` must be 2")
+
+    # big array
+    yield rs.rand(1000, 1000)
+    yield rs.rand(1000, 1001)
+    yield rs.rand(1001, 1001)
 
 
 def array_order(a):
