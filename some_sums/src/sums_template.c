@@ -667,30 +667,56 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum06, DTYPE0)
 {
-    npy_intp its;
     npy_DTYPE0 asum;
-    char *pa = PyArray_BYTES(a);
-    iter it;
     PyObject *y;
     npy_DTYPE0 *py;
-    init_iter(&it, a, axis);
-    y = PyArray_EMPTY(NDIM - 1, SHAPE, NPY_DTYPE0, 0);
+
+    int i, j = 0;
+    const int ndim = PyArray_NDIM(a);
+    const npy_intp *shape = PyArray_SHAPE(a);
+    const npy_intp *strides = PyArray_STRIDES(a);
+    Py_ssize_t length = 0;  /* a.shape[axis] */
+    Py_ssize_t astride = 0; /* a.strides[axis] */
+
+    npy_intp its = 0;
+    npy_intp nits = 1;
+    int ndim_m2 = ndim - 2;
+    char *pa = PyArray_BYTES(a);
+    npy_intp indices[NPY_MAXDIMS];  /* current location of iterator */
+    npy_intp astrides[NPY_MAXDIMS]; /* a.strides, a.strides[axis] removed */
+    npy_intp mshape[NPY_MAXDIMS];   /* a.shape, a.shape[axis] removed */
+
+    for (i = 0; i < ndim; i++) {
+        if (i == axis) {
+            astride = strides[i];
+            length = shape[i];
+        }
+        else {
+            indices[j] = 0;
+            astrides[j] = strides[i];
+            mshape[j] = shape[i];
+            nits *= shape[i];
+            j++;
+        }
+    }
+
+    y = PyArray_EMPTY(ndim - 1, mshape, NPY_DTYPE0, 0);
     py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
-    for (its = 0; its < it.nits; its++) {
+    for (its = 0; its < nits; its++) {
         asum = 0;
         npy_intp i;
-        for (i = 0; i < it.length; i++) {
-            asum += *(npy_DTYPE0 *)(pa + i * it.astride);
+        for (i = 0; i < length; i++) {
+            asum += *(npy_DTYPE0 *)(pa + i * astride);
         }
         py[its] = asum;
-        for (i = it.ndim_m2; i > -1; i--) {
-            if (it.indices[i] < it.shape[i] - 1) {
-                pa += it.astrides[i];
-                it.indices[i]++;
+        for (i = ndim_m2; i > -1; i--) {
+            if (indices[i] < mshape[i] - 1) {
+                pa += astrides[i];
+                indices[i]++;
                 break;
             }
-            pa -= it.indices[i] * it.astrides[i];
-            it.indices[i] = 0;
+            pa -= indices[i] * astrides[i];
+            indices[i] = 0;
         }
     }
     return y;
