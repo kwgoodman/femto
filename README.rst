@@ -19,8 +19,7 @@ My goal is to find fast ways to implement reduction functions (sum, mean,
 std, max, nansum, etc.) that are bound by memory I/O. I chose summation as a
 test case because very little time is spent with arithmetic which makes it
 easier to measure improvements from things like manual loop unrolling (sum01,
-sum02, sum03), SSE3 (sum04), AVX (sum05), and parallel processing (not yet
-implemented).
+sum02, sum03), SSE3 (sum04), AVX (sum05), and OpenMP (sum06).
 
 some_sums is based on code from `bottleneck`_. It comes with a benchmark
 suite::
@@ -34,12 +33,13 @@ suite::
             (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float64     int64     float64     int64
              axis=1     axis=0     axis=0     axis=1     axis=1     score
-    sum00     3.56       0.34       0.62       0.46       0.83       0.61
-    sum01     8.24       0.47       0.75       1.15       1.41       0.97
-    sum02     8.27       0.65       0.92       1.14       1.41       1.15
-    sum03     8.13       0.80       1.22       1.14       1.40       1.32
-    sum04    12.35       1.21       1.22       1.42       1.40       1.59
-    sum05    16.01       1.22       1.22       1.45       1.40       1.61
+    sum00     3.74       0.35       0.64       0.46       0.82       0.62
+    sum01     8.52       0.48       0.70       1.14       1.40       0.96
+    sum02     8.49       0.64       0.93       1.13       1.40       1.15
+    sum03     8.40       0.80       1.23       1.15       1.40       1.32
+    sum04    12.56       1.20       1.22       1.40       1.41       1.59
+    sum05    16.35       1.20       1.22       1.44       1.39       1.60
+    sum06     1.54       0.81       1.33       1.15       1.97       1.24
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
 should be possible to beat NumPy's performance. That's because some_sums has
@@ -68,7 +68,7 @@ some_sums is distributed under the GPL v3+. See the LICENSE file for details.
 Requirements
 ============
 
-- sse3, avx, x86intrin.h
+- sse3, avx, x86intrin.h, OpenMP
 - Python 2.7, 3.4, 3.5
 - NumPy 1.11
 - gcc

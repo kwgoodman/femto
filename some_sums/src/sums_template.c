@@ -702,13 +702,10 @@ REDUCE(sum06, DTYPE0)
 
     y = PyArray_EMPTY(ndim - 1, mshape, NPY_DTYPE0, 0);
     py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+
+    char **ppa = malloc(nits * sizeof(char*));
     for (its = 0; its < nits; its++) {
-        asum = 0;
-        npy_intp i;
-        for (i = 0; i < length; i++) {
-            asum += *(npy_DTYPE0 *)(pa + i * astride);
-        }
-        py[its] = asum;
+        ppa[its] = pa;
         for (i = ndim_m2; i > -1; i--) {
             if (indices[i] < mshape[i] - 1) {
                 pa += astrides[i];
@@ -719,6 +716,18 @@ REDUCE(sum06, DTYPE0)
             indices[i] = 0;
         }
     }
+
+    #pragma omp parallel for private(its)
+    for (its = 0; its < nits; its++) {
+        char *pa = ppa[its];
+        asum = 0;
+        npy_intp i;
+        for (i = 0; i < length; i++) {
+            asum += *(npy_DTYPE0 *)(pa + i * astride);
+        }
+        py[its] = asum;
+    }
+    free(ppa);
     return y;
 }
 /* dtype end */
