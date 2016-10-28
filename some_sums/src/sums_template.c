@@ -274,8 +274,7 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
         else {
             const Py_ssize_t i_simd = LENGTH - LENGTH % 8;
             WHILE {
-                double sum = 0.0;
-                double sum_simd = 0.0;
+                double sum_simd, sum = 0.0;
                 double *ad = (double *)it.pa;
                 __m128d vsum0, vsum1, vsum2, vsum3;
                 npy_uintp peel = calc_peel(ad, sizeof(double), 16);
@@ -479,8 +478,7 @@ sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
         else {
             Py_ssize_t i_simd = LENGTH - LENGTH % 16;
             WHILE {
-                double sum = 0.0;
-                double sum_simd = 0.0;
+                double sum_simd, sum = 0.0;
                 double *ad = (double *)it.pa;
                 __m256d vsum0, vsum1, vsum2, vsum3;
                 npy_uintp peel = calc_peel(ad, sizeof(double), 32);
