@@ -667,7 +667,6 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum06, DTYPE0)
 {
-    npy_DTYPE0 asum;
     PyObject *y;
     npy_DTYPE0 *py;
 
@@ -719,14 +718,14 @@ REDUCE(sum06, DTYPE0)
 
     #pragma omp parallel for private(its)
     for (its = 0; its < nits; its++) {
-        char *pa = ppa[its];
-        asum = 0;
         npy_intp i;
+        npy_DTYPE0 s = 0;
         for (i = 0; i < length; i++) {
-            asum += *(npy_DTYPE0 *)(pa + i * astride);
+            s += *(npy_DTYPE0 *)(ppa[its] + i * astride);
         }
-        py[its] = asum;
+        py[its] = s;
     }
+
     free(ppa);
     return y;
 }
