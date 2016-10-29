@@ -664,49 +664,39 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
 
 /* OpenMP */
 
-/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(sum06, DTYPE0)
+static BN_INLINE char**
+slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
 {
-    PyObject *y;
-    npy_DTYPE0 *py;
-
     int i, j = 0;
     const int ndim = PyArray_NDIM(a);
     const npy_intp *shape = PyArray_SHAPE(a);
     const npy_intp *strides = PyArray_STRIDES(a);
-    Py_ssize_t length = 0;  /* a.shape[axis] */
-    Py_ssize_t astride = 0; /* a.strides[axis] */
 
-    npy_intp its = 0;
-    npy_intp nits = 1;
-    int ndim_m2 = ndim - 2;
+    npy_intp its;
     char *pa = PyArray_BYTES(a);
-    npy_intp indices[NPY_MAXDIMS];  /* current location of iterator */
-    npy_intp astrides[NPY_MAXDIMS]; /* a.strides, a.strides[axis] removed */
-    npy_intp mshape[NPY_MAXDIMS];   /* a.shape, a.shape[axis] removed */
+    npy_intp indices[NPY_MAXDIMS];
+    npy_intp astrides[NPY_MAXDIMS];
+    char **ppa;
 
+    *nits = 1;
     for (i = 0; i < ndim; i++) {
         if (i == axis) {
-            astride = strides[i];
-            length = shape[i];
+            continue;
         }
         else {
             indices[j] = 0;
             astrides[j] = strides[i];
-            mshape[j] = shape[i];
-            nits *= shape[i];
+            yshape[j] = shape[i];
+            *nits *= shape[i];
             j++;
         }
     }
 
-    y = PyArray_EMPTY(ndim - 1, mshape, NPY_DTYPE0, 0);
-    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
-
-    char **ppa = malloc(nits * sizeof(char*));
-    for (its = 0; its < nits; its++) {
+    ppa = malloc(*nits * sizeof(char*));
+    for (its = 0; its < *nits; its++) {
         ppa[its] = pa;
-        for (i = ndim_m2; i > -1; i--) {
-            if (indices[i] < mshape[i] - 1) {
+        for (i = ndim - 2; i > -1; i--) {
+            if (indices[i] < yshape[i] - 1) {
                 pa += astrides[i];
                 indices[i]++;
                 break;
@@ -715,7 +705,21 @@ REDUCE(sum06, DTYPE0)
             indices[i] = 0;
         }
     }
+    return ppa;
+}
 
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE(sum06, DTYPE0)
+{
+    int ndim = PyArray_NDIM(a);
+    Py_ssize_t length = PyArray_DIM(a, axis);
+    Py_ssize_t astride = PyArray_STRIDE(a, axis);
+    npy_intp its;
+    npy_intp nits;
+    npy_intp yshape[NPY_MAXDIMS];
+    char **ppa = slice_starts(yshape, &nits, a, axis);
+    PyObject *y = PyArray_EMPTY(ndim - 1, yshape, NPY_DTYPE0, 0);
+    npy_DTYPE0 *py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
     #pragma omp parallel for private(its)
     for (its = 0; its < nits; its++) {
         npy_intp i;
@@ -725,7 +729,6 @@ REDUCE(sum06, DTYPE0)
         }
         py[its] = s;
     }
-
     free(ppa);
     return y;
 }
