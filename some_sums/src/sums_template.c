@@ -668,41 +668,52 @@ static BN_INLINE char**
 slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
 {
     int i, j = 0;
-    const int ndim = PyArray_NDIM(a);
-    const npy_intp *shape = PyArray_SHAPE(a);
-    const npy_intp *strides = PyArray_STRIDES(a);
-
     npy_intp its;
+    const int ndim = PyArray_NDIM(a);
     char *pa = PyArray_BYTES(a);
-    npy_intp indices[NPY_MAXDIMS];
-    npy_intp astrides[NPY_MAXDIMS];
     char **ppa;
 
-    *nits = 1;
-    for (i = 0; i < ndim; i++) {
-        if (i == axis) {
-            continue;
-        }
-        else {
-            indices[j] = 0;
-            astrides[j] = strides[i];
-            yshape[j] = shape[i];
-            *nits *= shape[i];
-            j++;
-        }
+    if (ndim == 2) {
+        int ax = axis == 0 ? 1 : 0;
+        *nits = PyArray_DIM(a, ax);
+        ppa = malloc(*nits * sizeof(char*));
+        const npy_intp stride = PyArray_STRIDE(a, ax);
+        ppa[0] = pa;
+        for (i = 1; i < *nits; i++) {
+            ppa[i] = pa + i * stride;
+        } 
+        yshape[0] = *nits;
     }
-
-    ppa = malloc(*nits * sizeof(char*));
-    for (its = 0; its < *nits; its++) {
-        ppa[its] = pa;
-        for (i = ndim - 2; i > -1; i--) {
-            if (indices[i] < yshape[i] - 1) {
-                pa += astrides[i];
-                indices[i]++;
-                break;
+    else {
+        const npy_intp *shape = PyArray_SHAPE(a);
+        const npy_intp *strides = PyArray_STRIDES(a);
+        npy_intp indices[NPY_MAXDIMS];
+        npy_intp astrides[NPY_MAXDIMS];
+        *nits = 1;
+        for (i = 0; i < ndim; i++) {
+            if (i == axis) {
+                continue;
             }
-            pa -= indices[i] * astrides[i];
-            indices[i] = 0;
+            else {
+                indices[j] = 0;
+                astrides[j] = strides[i];
+                yshape[j] = shape[i];
+                *nits *= shape[i];
+                j++;
+            }
+        }
+        ppa = malloc(*nits * sizeof(char*));
+        for (its = 0; its < *nits; its++) {
+            ppa[its] = pa;
+            for (i = ndim - 2; i > -1; i--) {
+                if (indices[i] < yshape[i] - 1) {
+                    pa += astrides[i];
+                    indices[i]++;
+                    break;
+                }
+                pa -= indices[i] * astrides[i];
+                indices[i] = 0;
+            }
         }
     }
     return ppa;
