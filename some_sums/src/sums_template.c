@@ -719,19 +719,26 @@ slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
     return ppa;
 }
 
+#define P_INIT(dtype, a, axis) \
+    int ndim = PyArray_NDIM(a); \
+    Py_ssize_t length = PyArray_DIM(a, axis); \
+    Py_ssize_t astride = PyArray_STRIDE(a, axis); \
+    npy_intp its; \
+    npy_intp nits; \
+    npy_intp yshape[NPY_MAXDIMS]; \
+    char **ppa = slice_starts(yshape, &nits, a, axis); \
+    PyObject *y = PyArray_EMPTY(ndim - 1, yshape, NPY_##dtype, 0); \
+    npy_##dtype *py = (npy_##dtype *)PyArray_DATA((PyArrayObject *)y);
+
+#define P_RETURN \
+    free(ppa); \
+    return y;
+
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum06, DTYPE0)
 {
-    int ndim = PyArray_NDIM(a);
-    Py_ssize_t length = PyArray_DIM(a, axis);
-    Py_ssize_t astride = PyArray_STRIDE(a, axis);
-    npy_intp its;
-    npy_intp nits;
-    npy_intp yshape[NPY_MAXDIMS];
-    char **ppa = slice_starts(yshape, &nits, a, axis);
-    PyObject *y = PyArray_EMPTY(ndim - 1, yshape, NPY_DTYPE0, 0);
-    npy_DTYPE0 *py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
-    #pragma omp parallel for private(its)
+    P_INIT(DTYPE0, a, axis)
+    #pragma omp parallel for
     for (its = 0; its < nits; its++) {
         npy_intp i;
         npy_DTYPE0 s = 0;
@@ -740,8 +747,7 @@ REDUCE(sum06, DTYPE0)
         }
         py[its] = s;
     }
-    free(ppa);
-    return y;
+    P_RETURN
 }
 /* dtype end */
 
@@ -754,17 +760,9 @@ REDUCE_MAIN(sum06)
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum07, DTYPE0)
 {
-    int ndim = PyArray_NDIM(a);
-    Py_ssize_t length = PyArray_DIM(a, axis);
-    Py_ssize_t astride = PyArray_STRIDE(a, axis);
-    npy_intp its;
-    npy_intp nits;
-    npy_intp yshape[NPY_MAXDIMS];
-    char **ppa = slice_starts(yshape, &nits, a, axis);
-    PyObject *y = PyArray_EMPTY(ndim - 1, yshape, NPY_DTYPE0, 0);
-    npy_DTYPE0 *py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    P_INIT(DTYPE0, a, axis)
     if (length < 4) {
-        #pragma omp parallel for private(its)
+        #pragma omp parallel for
         for (its = 0; its < nits; its++) {
             npy_intp i;
             npy_DTYPE0 s = 0;
@@ -776,7 +774,7 @@ REDUCE(sum07, DTYPE0)
     }
     else {
         Py_ssize_t i_unroll = length - length % 4;
-        #pragma omp parallel for private(its)
+        #pragma omp parallel for
         for (its = 0; its < nits; its++) {
             npy_DTYPE0 s[4];
             s[0] = *(npy_DTYPE0 *)(ppa[its] + 0 * astride);
@@ -796,8 +794,7 @@ REDUCE(sum07, DTYPE0)
             py[its] = s[0] + s[1] + s[2] + s[3];
         }
     }
-    free(ppa);
-    return y;
+    P_RETURN
 }
 /* dtype end */
 
