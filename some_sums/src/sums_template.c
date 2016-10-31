@@ -660,6 +660,149 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
                      sum05_int32);
 }
 
+/* sum06 ----------------------------------------------------------------- */
+
+/* OpenMP */
+
+static BN_INLINE char**
+slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
+{
+    int i, j = 0;
+    npy_intp its;
+    const int ndim = PyArray_NDIM(a);
+    char *pa = PyArray_BYTES(a);
+    char **ppa;
+
+    if (ndim == 2) {
+        int ax = axis == 0 ? 1 : 0;
+        *nits = PyArray_DIM(a, ax);
+        ppa = malloc(*nits * sizeof(char*));
+        const npy_intp stride = PyArray_STRIDE(a, ax);
+        ppa[0] = pa;
+        for (i = 1; i < *nits; i++) {
+            ppa[i] = pa + i * stride;
+        } 
+        yshape[0] = *nits;
+    }
+    else {
+        const npy_intp *shape = PyArray_SHAPE(a);
+        const npy_intp *strides = PyArray_STRIDES(a);
+        npy_intp indices[NPY_MAXDIMS];
+        npy_intp astrides[NPY_MAXDIMS];
+        *nits = 1;
+        for (i = 0; i < ndim; i++) {
+            if (i == axis) {
+                continue;
+            }
+            else {
+                indices[j] = 0;
+                astrides[j] = strides[i];
+                yshape[j] = shape[i];
+                *nits *= shape[i];
+                j++;
+            }
+        }
+        ppa = malloc(*nits * sizeof(char*));
+        for (its = 0; its < *nits; its++) {
+            ppa[its] = pa;
+            for (i = ndim - 2; i > -1; i--) {
+                if (indices[i] < yshape[i] - 1) {
+                    pa += astrides[i];
+                    indices[i]++;
+                    break;
+                }
+                pa -= indices[i] * astrides[i];
+                indices[i] = 0;
+            }
+        }
+    }
+    return ppa;
+}
+
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE(sum06, DTYPE0)
+{
+    int ndim = PyArray_NDIM(a);
+    Py_ssize_t length = PyArray_DIM(a, axis);
+    Py_ssize_t astride = PyArray_STRIDE(a, axis);
+    npy_intp its;
+    npy_intp nits;
+    npy_intp yshape[NPY_MAXDIMS];
+    char **ppa = slice_starts(yshape, &nits, a, axis);
+    PyObject *y = PyArray_EMPTY(ndim - 1, yshape, NPY_DTYPE0, 0);
+    npy_DTYPE0 *py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    #pragma omp parallel for private(its)
+    for (its = 0; its < nits; its++) {
+        npy_intp i;
+        npy_DTYPE0 s = 0;
+        for (i = 0; i < length; i++) {
+            s += *(npy_DTYPE0 *)(ppa[its] + i * astride);
+        }
+        py[its] = s;
+    }
+    free(ppa);
+    return y;
+}
+/* dtype end */
+
+REDUCE_MAIN(sum06)
+
+/* sum07 ----------------------------------------------------------------- */
+
+/* OpenMP + loop unrolling (x4)*/
+
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE(sum07, DTYPE0)
+{
+    int ndim = PyArray_NDIM(a);
+    Py_ssize_t length = PyArray_DIM(a, axis);
+    Py_ssize_t astride = PyArray_STRIDE(a, axis);
+    npy_intp its;
+    npy_intp nits;
+    npy_intp yshape[NPY_MAXDIMS];
+    char **ppa = slice_starts(yshape, &nits, a, axis);
+    PyObject *y = PyArray_EMPTY(ndim - 1, yshape, NPY_DTYPE0, 0);
+    npy_DTYPE0 *py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    if (length < 4) {
+        #pragma omp parallel for private(its)
+        for (its = 0; its < nits; its++) {
+            npy_intp i;
+            npy_DTYPE0 s = 0;
+            for (i = 0; i < length; i++) {
+                s += *(npy_DTYPE0 *)(ppa[its] + i * astride);
+            }
+            py[its] = s;
+        }
+    }
+    else {
+        Py_ssize_t i_unroll = length - length % 4;
+        #pragma omp parallel for private(its)
+        for (its = 0; its < nits; its++) {
+            npy_DTYPE0 s[4];
+            s[0] = *(npy_DTYPE0 *)(ppa[its] + 0 * astride);
+            s[1] = *(npy_DTYPE0 *)(ppa[its] + 1 * astride);
+            s[2] = *(npy_DTYPE0 *)(ppa[its] + 2 * astride);
+            s[3] = *(npy_DTYPE0 *)(ppa[its] + 3 * astride);
+            Py_ssize_t i = 4;
+            for (; i < i_unroll; i += 4) {
+                s[0] += *(npy_DTYPE0 *)(ppa[its] + i * astride);
+                s[1] += *(npy_DTYPE0 *)(ppa[its] + (i+1) * astride);
+                s[2] += *(npy_DTYPE0 *)(ppa[its] + (i+2) * astride);
+                s[3] += *(npy_DTYPE0 *)(ppa[its] + (i+3) * astride);
+            }
+            for (; i < length; i++) {
+                s[0] += *(npy_DTYPE0 *)(ppa[its] + i * astride);
+            }
+            py[its] = s[0] + s[1] + s[2] + s[3];
+        }
+    }
+    free(ppa);
+    return y;
+}
+/* dtype end */
+
+REDUCE_MAIN(sum07)
+
 
 /* python strings -------------------------------------------------------- */
 
@@ -1001,6 +1144,8 @@ sums_methods[] = {
     {"sum03", (PyCFunction)sum03, VARKEY, sum_doc},
     {"sum04", (PyCFunction)sum04, VARKEY, sum_doc},
     {"sum05", (PyCFunction)sum05, VARKEY, sum_doc},
+    {"sum06", (PyCFunction)sum06, VARKEY, sum_doc},
+    {"sum07", (PyCFunction)sum07, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 
