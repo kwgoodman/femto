@@ -6,10 +6,24 @@ import some_sums as ss
 
 
 def update_readme():
+    update_bench('bench')
+    update_bench('bench_overhead')
+
+
+def update_bench(name):
+
+    if name == 'bench':
+        bench_func = ss.bench
+        target_str = '>>> ss.bench()'
+    elif name == 'bench_overhead':
+        bench_func = ss.bench_overhead
+        target_str = '>>> ss.bench_overhead()'
+    else:
+        raise ValueError("`name` not recognized")
 
     # run benchmark suite while capturing output; indent
     with Capturing() as bench_list:
-        ss.bench()
+        bench_func()
     bench_list = ['    ' + b for b in bench_list]
 
     # read readme
@@ -20,7 +34,8 @@ def update_readme():
     readme_list = [r.strip('\n') for r in readme_list]
 
     # remove old benchmark result from readme
-    idx1 = readme_list.index('    some_sums performance benchmark')
+    idx1 = readme_list.index('    %s' % target_str)
+    idx1 += 1
     idx2 = [i for i, line in enumerate(readme_list) if line == '']
     idx2 = [i for i in idx2 if i > idx1]
     idx2 = idx2[1]

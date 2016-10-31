@@ -57,6 +57,26 @@ harmonic mean. If a NumPy program spends equal time summing the two benchmark
 arrays, each 1 unit of time, then it will take 1/2 + 2 units of time with
 some_sums, which is a speed of 2/2.5 = 0.8.
 
+Let's look at function call overhead by benchmarking with small input arrays::
+
+    >>> ss.bench_overhead()
+    some_sums performance benchmark
+        some_sums 0.0.1dev; Numpy 1.11.2
+        Speed is NumPy time divided by some_sums time
+        Score is harmonic mean of speeds
+
+             (1,1)     (10,10)    (40,40)    (60,60)   (100,100)
+            float64    float64    float64    float64    float64
+             axis=1     axis=1     axis=1     axis=1     axis=1     score
+    sum00    22.55      15.16       3.19       1.82       0.98       2.51
+    sum01    19.90      15.80       5.82       3.98       2.44       5.28
+    sum02    21.83      16.87       6.15       4.14       2.51       5.51
+    sum03    21.95      16.74       6.20       4.16       2.51       5.52
+    sum04    21.78      18.02       8.25       5.69       3.37       7.19
+    sum05    21.65      14.80       7.15       4.96       2.94       6.28
+    sum06     1.87       2.03       2.28       2.58       2.76       2.26
+    sum07     1.85       2.11       2.47       2.85       3.23       2.41
+
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have
 ideas on how to speed up the `code`_ then `share`_ them.

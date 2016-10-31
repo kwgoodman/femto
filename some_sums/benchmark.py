@@ -6,6 +6,21 @@ import some_sums as ss
 __all__ = ['bench']
 
 
+def bench_overhead(shapes=[(1, 1), (10, 10), (40, 40), (60, 60), (100, 100)],
+                   dtypes=['float64', 'float64', 'float64', 'float64',
+                           'float64'],
+                   axes=[1, 1, 1, 1, 1], order='C', functions=None):
+    "Benchmark performance with small input arrays"
+    bench(shapes, dtypes, axes, order, functions)
+
+
+def bench_3d(shapes=[(100, 100, 100), (100, 100, 100), (100, 100, 100)],
+             dtypes=['float64', 'float64', 'float64'],
+             axes=[0, 1, 2], order='C', functions=None):
+    "Benchmark performance with 3d input arrays"
+    bench(shapes, dtypes, axes, order, functions)
+
+
 def bench(shapes=[(1, 1000), (1000, 1000), (1000, 1000), (1000, 1000),
                   (1000, 1000)],
           dtypes=['float64', 'float64', 'int64', 'float64', 'int64'],
