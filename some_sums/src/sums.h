@@ -175,3 +175,10 @@ reducer02(PyObject *args,
           fnf_t f_float32,
           fnf_t f_int64,
           fnf_t f_int32);
+
+
+#if defined(_MSC_VER)
+     #include <intrin.h>
+#elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+     #include <x86intrin.h>
+#endif

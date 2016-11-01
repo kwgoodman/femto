@@ -17,7 +17,6 @@
 
 #include "sums.h"
 #include "iterators.h"
-#include <x86intrin.h>
 
 /* sum00 ----------------------------------------------------------------- */
 
