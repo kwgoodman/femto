@@ -29,7 +29,7 @@ def prepare_modules():
         extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp']
         extra_link_args = ['-lomp']
     elif platform == "win32":
-        extra_compile_args = ['-O2', '/openmp']
+        extra_compile_args = ['-O2', '/openmp', '/arch:AVX']
         extra_link_args = []
     else:
         extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp']
