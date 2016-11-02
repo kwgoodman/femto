@@ -25,10 +25,9 @@
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum00, DTYPE0)
 {
-    npy_DTYPE0 asum;
     INIT(DTYPE0, DTYPE0)
     WHILE {
-        asum = 0;
+        npy_DTYPE0 asum = 0;
         FOR asum += AI(DTYPE0);
         YPP = asum;
         NEXT
@@ -47,11 +46,10 @@ REDUCE_MAIN(sum00)
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum01, DTYPE0)
 {
-    npy_DTYPE0 asum;
     INIT(DTYPE0, DTYPE0)
     if (LENGTH < 4) {
         WHILE {
-            asum = 0;
+            npy_DTYPE0 asum = 0;
             FOR asum += AI(DTYPE0);
             YPP = asum;
             NEXT
@@ -59,13 +57,13 @@ REDUCE(sum01, DTYPE0)
     }
     else {
         WHILE {
+            Py_ssize_t i = 4;
             Py_ssize_t repeat = LENGTH - LENGTH % 4;
             npy_DTYPE0 s[4];
             s[0] = AX(DTYPE0, 0);
             s[1] = AX(DTYPE0, 1);
             s[2] = AX(DTYPE0, 2);
             s[3] = AX(DTYPE0, 3);
-            Py_ssize_t i = 4;
             for (; i < repeat; i += 4) {
                 s[0] += AX(DTYPE0, i);
                 s[1] += AX(DTYPE0, i + 1);
@@ -96,11 +94,10 @@ sum02_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
-        npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
             WHILE {
-                asum = 0;
+                npy_DTYPE0 asum = 0;
                 FOR asum += AI(DTYPE0);
                 YPP = asum;
                 NEXT
@@ -108,13 +105,13 @@ sum02_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
         }
         else {
             WHILE {
+                Py_ssize_t i = 4;
                 Py_ssize_t repeat = LENGTH - LENGTH % 4;
                 npy_DTYPE0 s[4];
                 s[0] = AX(DTYPE0, 0);
                 s[1] = AX(DTYPE0, 1);
                 s[2] = AX(DTYPE0, 2);
                 s[3] = AX(DTYPE0, 3);
-                Py_ssize_t i = 4;
                 for (; i < repeat; i += 4) {
                     s[0] += AX(DTYPE0, i);
                     s[1] += AX(DTYPE0, i + 1);
@@ -164,11 +161,10 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
-        npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
             WHILE {
-                asum = 0;
+                npy_DTYPE0 asum = 0;
                 FOR asum += AI(DTYPE0);
                 YPP = asum;
                 NEXT
@@ -176,13 +172,13 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
         }
         else {
             WHILE {
+                Py_ssize_t i = 4;
                 Py_ssize_t repeat = LENGTH - LENGTH % 4;
                 npy_DTYPE0 s[4];
                 s[0] = AX(DTYPE0, 0);
                 s[1] = AX(DTYPE0, 1);
                 s[2] = AX(DTYPE0, 2);
                 s[3] = AX(DTYPE0, 3);
-                Py_ssize_t i = 4;
                 for (; i < repeat; i += 4) {
                     s[0] += AX(DTYPE0, i);
                     s[1] += AX(DTYPE0, i + 1);
@@ -259,12 +255,11 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
-        npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 9 || !IS_CONTIGUOUS(a)) {
             /* could loop unroll here */
             WHILE {
-                asum = 0;
+                npy_DTYPE0 asum = 0;
                 FOR asum += AI(DTYPE0);
                 YPP = asum;
                 NEXT
@@ -377,11 +372,10 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
-        npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
             WHILE {
-                asum = 0;
+                npy_DTYPE0 asum = 0;
                 FOR asum += AI(DTYPE0);
                 YPP = asum;
                 NEXT
@@ -463,12 +457,11 @@ sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
-        npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 19 || !IS_CONTIGUOUS(a)) {
             /* could loop unroll here */
             WHILE {
-                asum = 0;
+                npy_DTYPE0 asum = 0;
                 FOR asum += AI(DTYPE0);
                 YPP = asum;
                 NEXT
@@ -584,11 +577,10 @@ sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
-        npy_DTYPE0 asum;
         INIT01(DTYPE0, DTYPE0)
         if (LENGTH < 4) {
             WHILE {
-                asum = 0;
+                npy_DTYPE0 asum = 0;
                 FOR asum += AI(DTYPE0);
                 YPP = asum;
                 NEXT
@@ -673,10 +665,11 @@ slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
     char **ppa;
 
     if (ndim == 2) {
+        npy_intp stride;
         int ax = axis == 0 ? 1 : 0;
+        stride = PyArray_STRIDE(a, ax);
         *nits = PyArray_DIM(a, ax);
         ppa = malloc(*nits * sizeof(char*));
-        const npy_intp stride = PyArray_STRIDE(a, ax);
         ppa[0] = pa;
         for (i = 1; i < *nits; i++) {
             ppa[i] = pa + i * stride;
@@ -775,12 +768,12 @@ REDUCE(sum07, DTYPE0)
         Py_ssize_t i_unroll = length - length % 4;
         #pragma omp parallel for
         for (its = 0; its < nits; its++) {
+            Py_ssize_t i = 4;
             npy_DTYPE0 s[4];
             s[0] = *(npy_DTYPE0 *)(ppa[its] + 0 * astride);
             s[1] = *(npy_DTYPE0 *)(ppa[its] + 1 * astride);
             s[2] = *(npy_DTYPE0 *)(ppa[its] + 2 * astride);
             s[3] = *(npy_DTYPE0 *)(ppa[its] + 3 * astride);
-            Py_ssize_t i = 4;
             for (; i < i_unroll; i += 4) {
                 s[0] += *(npy_DTYPE0 *)(ppa[its] + i * astride);
                 s[1] += *(npy_DTYPE0 *)(ppa[its] + (i+1) * astride);
