@@ -24,11 +24,21 @@ class build_ext(_build_ext):
 def prepare_modules():
     from some_sums.src.template import make_c_files
     make_c_files()
+    platform = sys.platform
+    if platform == "darwin":
+        extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp=libomp']
+        extra_link_args = ['-lomp']
+    elif platform == "win32":
+        extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp']
+        extra_link_args = ['-lgomp']
+    else:
+        extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp']
+        extra_link_args = ['-lgomp']
     ext = [Extension("some_sums.sums",
                      sources=["some_sums/src/sums.c"],
                      include_dirs=[],
-                     extra_compile_args=['-O2', '-msse3', '-mavx', '-fopenmp'],
-                     extra_link_args=['-lgomp'])]
+                     extra_compile_args=extra_compile_args,
+                     extra_link_args=extra_link_args)]
     return ext
 
 
