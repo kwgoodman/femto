@@ -658,13 +658,12 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
 static BN_INLINE char**
 slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
 {
-    int i, j = 0;
-    npy_intp its;
     const int ndim = PyArray_NDIM(a);
     char *pa = PyArray_BYTES(a);
     char **ppa;
 
     if (ndim == 2) {
+        int i;
         npy_intp stride;
         int ax = axis == 0 ? 1 : 0;
         stride = PyArray_STRIDE(a, ax);
@@ -677,6 +676,7 @@ slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
         yshape[0] = *nits;
     }
     else {
+        int i, j = 0;
         const npy_intp *shape = PyArray_SHAPE(a);
         const npy_intp *strides = PyArray_STRIDES(a);
         npy_intp indices[NPY_MAXDIMS];
@@ -695,8 +695,8 @@ slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
             }
         }
         ppa = malloc(*nits * sizeof(char*));
-        for (its = 0; its < *nits; its++) {
-            ppa[its] = pa;
+        for (j = 0; j < *nits; j++) {
+            ppa[j] = pa;
             for (i = ndim - 2; i > -1; i--) {
                 if (indices[i] < yshape[i] - 1) {
                     pa += astrides[i];
