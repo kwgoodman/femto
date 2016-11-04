@@ -651,9 +651,126 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
                      sum05_int32);
 }
 
-/* sum06 ----------------------------------------------------------------- */
+/* sum06, sum07 ---------------------------------------------------------- */
 
-/* OpenMP */
+/* It would be a lot of work to have a separate code base for single-threaded
+ * and multi-threaded versions of the same function. Is there a way to use
+ * the same code base for both versions? I think I came up with one.
+ *
+ * sum07 is the multi-threaded (OpenMP) version of sum00. And sum06 is (the
+ * single-threaded version of sum00. Note that sum06 and sum07 different only
+ * by one line of code.*/
+
+struct _piter {
+    Py_ssize_t length;  /* a.shape[axis] */
+    Py_ssize_t astride; /* a.strides[axis] */
+    npy_intp   nits;    /* number of iterations iterator plans to make */
+    npy_intp   yshape[NPY_MAXDIMS];    /* a.shape, a.shape[axis] removed */
+    char       **ppa;    /* array of pointers to start of each slice */
+};
+typedef struct _piter piter;
+
+static BN_INLINE void
+init_piter(piter *it, PyArrayObject *a, int axis, PyObject **y, int ydtype)
+{
+    const int ndim = PyArray_NDIM(a);
+    char *pa = PyArray_BYTES(a);
+
+    if (ndim == 2) {
+
+        int i;
+        int axis_reduce;
+        npy_intp yshape[1];
+        npy_intp stride;
+
+        it->length = PyArray_DIM(a, axis);
+        it->astride = PyArray_STRIDE(a, axis);
+
+        axis_reduce = axis == 0 ? 1 : 0;
+        stride = PyArray_STRIDE(a, axis_reduce);
+        it->nits = PyArray_DIM(a, axis_reduce);
+
+        it->ppa = malloc(it->nits * sizeof(char*));
+        it->ppa[0] = pa;
+        for (i = 1; i < it->nits; i++) {
+            it->ppa[i] = pa + i * stride;
+        } 
+
+        yshape[0] = it->nits;
+        *y = PyArray_EMPTY(1, yshape, ydtype, 0);
+
+    }
+    else {
+        int i, j = 0;
+        const npy_intp *shape = PyArray_SHAPE(a);
+        const npy_intp *strides = PyArray_STRIDES(a);
+        npy_intp yshape[NPY_MAXDIMS];
+        npy_intp indices[NPY_MAXDIMS];
+        npy_intp astrides[NPY_MAXDIMS];
+        it->length = shape[axis];
+        it->astride = strides[axis];
+        it->nits = 1;
+        for (i = 0; i < ndim; i++) {
+            if (i == axis) {
+                continue;
+            }
+            else {
+                indices[j] = 0;
+                astrides[j] = strides[i];
+                yshape[j] = shape[i];
+                it->nits *= shape[i];
+                j++;
+            }
+        }
+        it->ppa = malloc(it->nits * sizeof(char*));
+        for (j = 0; j < it->nits; j++) {
+            it->ppa[j] = pa;
+            for (i = ndim - 2; i > -1; i--) {
+                if (indices[i] < yshape[i] - 1) {
+                    pa += astrides[i];
+                    indices[i]++;
+                    break;
+                }
+                pa -= indices[i] * astrides[i];
+                indices[i] = 0;
+            }
+        }
+        *y = PyArray_EMPTY(ndim - 1, yshape, ydtype, 0);
+    }
+}
+
+
+/* repeat = {'NAME': ['sum06', 'sum07'],
+             'PARALLEL': ['',   '#pragma omp parallel for']} */
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE(NAME, DTYPE0)
+{
+    npy_intp its;
+    PyObject *y;
+    npy_DTYPE0 *py;
+    piter it;
+    init_piter(&it, a, axis, &y, NPY_DTYPE0);
+    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    PARALLEL
+    for (its = 0; its < it.nits; its++) {
+        npy_intp i;
+        npy_DTYPE0 s = 0;
+        for (i = 0; i < it.length; i++) {
+            s += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+        }
+        py[its] = s;
+    }
+    free(it.ppa);
+    return y;
+}
+/* dtype end */
+
+REDUCE_MAIN(NAME)
+/* repeat end */
+
+/* sum08 ----------------------------------------------------------------- */
+
+/* OpenMP + loop unrolling (x4)*/
 
 static BN_INLINE char**
 slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
@@ -727,30 +844,7 @@ slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
     return y;
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(sum06, DTYPE0)
-{
-    P_INIT(DTYPE0, a, axis)
-    #pragma omp parallel for
-    for (its = 0; its < nits; its++) {
-        npy_intp i;
-        npy_DTYPE0 s = 0;
-        for (i = 0; i < length; i++) {
-            s += *(npy_DTYPE0 *)(ppa[its] + i * astride);
-        }
-        py[its] = s;
-    }
-    P_RETURN
-}
-/* dtype end */
-
-REDUCE_MAIN(sum06)
-
-/* sum07 ----------------------------------------------------------------- */
-
-/* OpenMP + loop unrolling (x4)*/
-
-/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(sum07, DTYPE0)
+REDUCE(sum08, DTYPE0)
 {
     P_INIT(DTYPE0, a, axis)
     if (length < 4) {
@@ -790,7 +884,7 @@ REDUCE(sum07, DTYPE0)
 }
 /* dtype end */
 
-REDUCE_MAIN(sum07)
+REDUCE_MAIN(sum08)
 
 
 /* python strings -------------------------------------------------------- */
@@ -1135,6 +1229,7 @@ sums_methods[] = {
     {"sum05", (PyCFunction)sum05, VARKEY, sum_doc},
     {"sum06", (PyCFunction)sum06, VARKEY, sum_doc},
     {"sum07", (PyCFunction)sum07, VARKEY, sum_doc},
+    {"sum08", (PyCFunction)sum08, VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 

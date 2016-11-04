@@ -19,7 +19,7 @@ My goal is to find fast ways to implement reduction functions (sum, mean,
 std, max, nansum, etc.) that are bound by memory I/O. I chose summation as a
 test case because very little time is spent with arithmetic which makes it
 easier to measure improvements from things like manual loop unrolling (sum01,
-sum02, sum03), SSE3 (sum04), AVX (sum05), and OpenMP (sum06, sum07).
+sum02, sum03), SSE3 (sum04), AVX (sum05), and OpenMP (sum07, sum08).
 
 some_sums is based on code from `bottleneck`_. It comes with a benchmark
 suite::
@@ -33,14 +33,15 @@ suite::
             (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float64     int64     float64     int64
              axis=1     axis=0     axis=0     axis=1     axis=1     score
-    sum00     3.53       0.35       0.64       0.47       0.85       0.62
-    sum01     7.98       0.46       0.73       1.13       1.39       0.95
-    sum02     8.13       0.66       0.93       1.16       1.39       1.17
-    sum03     8.13       0.81       1.21       1.14       1.38       1.32
-    sum04    12.20       1.21       1.21       1.37       1.41       1.58
-    sum05    15.44       1.17       1.23       1.44       1.35       1.58
-    sum06     1.53       1.45       2.33       3.05       4.37       2.15
-    sum07     2.12       1.45       2.45       4.39       6.05       2.55
+    sum00     3.45       0.28       0.49       0.46       0.83       0.54
+    sum01     7.48       0.37       0.50       1.09       1.28       0.76
+    sum02     8.44       0.67       1.01       1.11       1.46       1.20
+    sum03     8.33       0.84       1.24       1.08       1.31       1.31
+    sum04    12.93       1.14       1.22       1.44       1.37       1.56
+    sum05    15.03       1.24       1.15       1.36       1.33       1.55
+    sum06     3.46       0.26       0.54       0.47       1.04       0.55
+    sum07     1.43       1.34       2.11       2.92       4.28       2.00
+    sum08     1.87       1.47       2.32       4.24       6.03       2.44
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
 should be possible to beat NumPy's performance. That's because some_sums has
@@ -68,14 +69,15 @@ Let's look at function call overhead by benchmarking with small input arrays::
              (1,1)     (10,10)    (40,40)    (60,60)   (100,100)
             float64    float64    float64    float64    float64
              axis=1     axis=1     axis=1     axis=1     axis=1     score
-    sum00    22.55      15.16       3.19       1.82       0.98       2.51
-    sum01    19.90      15.80       5.82       3.98       2.44       5.28
-    sum02    21.83      16.87       6.15       4.14       2.51       5.51
-    sum03    21.95      16.74       6.20       4.16       2.51       5.52
-    sum04    21.78      18.02       8.25       5.69       3.37       7.19
-    sum05    21.65      14.80       7.15       4.96       2.94       6.28
-    sum06     1.87       2.03       2.28       2.58       2.76       2.26
-    sum07     1.85       2.11       2.47       2.85       3.23       2.41
+    sum00    22.80      14.22       2.54       1.66       0.99       2.35
+    sum01    22.50      17.29       6.27       3.97       2.48       5.45
+    sum02    22.21      17.09       6.41       4.07       2.56       5.58
+    sum03    21.83      17.11       6.40       4.07       2.53       5.55
+    sum04    22.17      18.43       8.45       5.67       3.59       7.44
+    sum05    22.00      13.78       7.46       5.20       3.06       6.49
+    sum06    18.67      15.32       3.30       1.89       1.05       2.62
+    sum07     1.71       1.91       2.26       2.23       2.79       2.12
+    sum08     1.90       1.91       2.48       2.06       3.51       2.25
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have
