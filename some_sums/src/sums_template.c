@@ -20,7 +20,7 @@
 
 /* sum00 ----------------------------------------------------------------- */
 
-/* simple for loop */
+/* simple for loop in the style of bottleneck 1.2.0 */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(sum00, DTYPE0)
@@ -61,70 +61,39 @@ typedef struct _piter piter;
 static BN_INLINE void
 init_piter(piter *it, PyArrayObject *a, int axis, PyObject **y, int ydtype)
 {
+    int i, j = 0;
     const int ndim = PyArray_NDIM(a);
     char *pa = PyArray_BYTES(a);
-
-    if (ndim == 2) {
-
-        int i;
-        int axis_reduce;
-        npy_intp yshape[1];
-        npy_intp stride;
-
-        it->length = PyArray_DIM(a, axis);
-        it->astride = PyArray_STRIDE(a, axis);
-
-        axis_reduce = axis == 0 ? 1 : 0;
-        stride = PyArray_STRIDE(a, axis_reduce);
-        it->nits = PyArray_DIM(a, axis_reduce);
-
-        it->ppa = malloc(it->nits * sizeof(char*));
-        it->ppa[0] = pa;
-        for (i = 1; i < it->nits; i++) {
-            it->ppa[i] = pa + i * stride;
-        } 
-
-        yshape[0] = it->nits;
-        *y = PyArray_EMPTY(1, yshape, ydtype, 0);
-
-    }
-    else {
-        int i, j = 0;
-        const npy_intp *shape = PyArray_SHAPE(a);
-        const npy_intp *strides = PyArray_STRIDES(a);
-        npy_intp yshape[NPY_MAXDIMS];
-        npy_intp indices[NPY_MAXDIMS];
-        npy_intp astrides[NPY_MAXDIMS];
-        it->length = shape[axis];
-        it->astride = strides[axis];
-        it->nits = 1;
-        for (i = 0; i < ndim; i++) {
-            if (i == axis) {
-                continue;
-            }
-            else {
-                indices[j] = 0;
-                astrides[j] = strides[i];
-                yshape[j] = shape[i];
-                it->nits *= shape[i];
-                j++;
-            }
+    const npy_intp *shape = PyArray_SHAPE(a);
+    const npy_intp *strides = PyArray_STRIDES(a);
+    npy_intp yshape[NPY_MAXDIMS];
+    npy_intp indices[NPY_MAXDIMS];
+    it->length = shape[axis];
+    it->astride = strides[axis];
+    it->nits = 1;
+    for (i = 0; i < ndim; i++) {
+        indices[i] = 0;
+        if (i != axis) {
+            it->nits *= shape[i];
+            yshape[j] = shape[i];
+            j++;
         }
-        it->ppa = malloc(it->nits * sizeof(char*));
-        for (j = 0; j < it->nits; j++) {
-            it->ppa[j] = pa;
-            for (i = ndim - 2; i > -1; i--) {
-                if (indices[i] < yshape[i] - 1) {
-                    pa += astrides[i];
-                    indices[i]++;
-                    break;
-                }
-                pa -= indices[i] * astrides[i];
-                indices[i] = 0;
-            }
-        }
-        *y = PyArray_EMPTY(ndim - 1, yshape, ydtype, 0);
     }
+    it->ppa = malloc(it->nits * sizeof(char*));
+    for (j = 0; j < it->nits; j++) {
+        it->ppa[j] = pa;
+        for (i = ndim - 1; i > -1; i--) {
+            if (i == axis) continue;
+            if (indices[i] < shape[i] - 1) {
+                pa += strides[i];
+                indices[i]++;
+                break;
+            }
+            pa -= indices[i] * strides[i];
+            indices[i] = 0;
+        }
+    }
+    *y = PyArray_EMPTY(ndim - 1, yshape, ydtype, 0);
 }
 
 #define P_INIT(dtype) \
