@@ -127,29 +127,37 @@ init_piter(piter *it, PyArrayObject *a, int axis, PyObject **y, int ydtype)
     }
 }
 
+#define P_INIT(dtype) \
+    npy_intp its; \
+    PyObject *y; \
+    npy_##dtype *py; \
+    piter it; \
+    init_piter(&it, a, axis, &y, NPY_##dtype); \
+    py = (npy_##dtype *)PyArray_DATA((PyArrayObject *)y);
+
+#define P_RETURN \
+    free(it.ppa); \
+    return y;
+
+#define A(dtype, i) \
+    *(npy_##dtype *)(it.ppa[its] + (i) * it.astride)
 
 /* repeat = {'NAME': ['sum01', 'p_sum01'],
              'PARALLEL': ['', '#pragma omp parallel for']} */
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(NAME, DTYPE0)
 {
-    npy_intp its;
-    PyObject *y;
-    npy_DTYPE0 *py;
-    piter it;
-    init_piter(&it, a, axis, &y, NPY_DTYPE0);
-    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    P_INIT(DTYPE0)
     PARALLEL
     for (its = 0; its < it.nits; its++) {
         npy_intp i;
         npy_DTYPE0 s = 0;
         for (i = 0; i < it.length; i++) {
-            s += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+            s += A(DTYPE0, i);
         }
         py[its] = s;
     }
-    free(it.ppa);
-    return y;
+    P_RETURN
 }
 /* dtype end */
 
@@ -165,19 +173,14 @@ REDUCE_MAIN(NAME)
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 REDUCE(NAME, DTYPE0)
 {
-    npy_intp its;
-    PyObject *y;
-    npy_DTYPE0 *py;
-    piter it;
-    init_piter(&it, a, axis, &y, NPY_DTYPE0);
-    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    P_INIT(DTYPE0)
     if (it.length < 4) {
         PARALLEL
         for (its = 0; its < it.nits; its++) {
             npy_intp i;
             npy_DTYPE0 s = 0;
             for (i = 0; i < it.length; i++) {
-                s += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+                s += A(DTYPE0, i);
             }
             py[its] = s;
         }
@@ -188,24 +191,23 @@ REDUCE(NAME, DTYPE0)
         for (its = 0; its < it.nits; its++) {
             Py_ssize_t i = 4;
             npy_DTYPE0 s[4];
-            s[0] = *(npy_DTYPE0 *)(it.ppa[its] + 0 * it.astride);
-            s[1] = *(npy_DTYPE0 *)(it.ppa[its] + 1 * it.astride);
-            s[2] = *(npy_DTYPE0 *)(it.ppa[its] + 2 * it.astride);
-            s[3] = *(npy_DTYPE0 *)(it.ppa[its] + 3 * it.astride);
+            s[0] = A(DTYPE0, 0);
+            s[1] = A(DTYPE0, 1);
+            s[2] = A(DTYPE0, 2);
+            s[3] = A(DTYPE0, 3);
             for (; i < i_unroll; i += 4) {
-                s[0] += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
-                s[1] += *(npy_DTYPE0 *)(it.ppa[its] + (i+1) * it.astride);
-                s[2] += *(npy_DTYPE0 *)(it.ppa[its] + (i+2) * it.astride);
-                s[3] += *(npy_DTYPE0 *)(it.ppa[its] + (i+3) * it.astride);
+                s[0] += A(DTYPE0, i);
+                s[1] += A(DTYPE0, i + 1);
+                s[2] += A(DTYPE0, i + 2);
+                s[3] += A(DTYPE0, i + 3);
             }
             for (; i < it.length; i++) {
-                s[0] += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+                s[0] += A(DTYPE0, i);
             }
             py[its] = s[0] + s[1] + s[2] + s[3];
         }
     }
-    free(it.ppa);
-    return y;
+    P_RETURN
 }
 /* dtype end */
 
