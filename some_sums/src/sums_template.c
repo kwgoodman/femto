@@ -38,59 +38,187 @@ REDUCE(sum00, DTYPE0)
 
 REDUCE_MAIN(sum00)
 
+/* sum01, p_sum01 -------------------------------------------------------- */
 
-/* sum01 ----------------------------------------------------------------- */
+/* It would be a lot of work to have a separate code base for single-threaded
+ * and multi-threaded versions of the same function. Is there a way to use
+ * the same code base for both versions? I think I came up with one that
+ * doesn't sacrifice much performance.
+ *
+ * p_sum01 is the multi-threaded (OpenMP) version of sum00. And sum01 is the
+ * single-threaded version of sum00. Note that sum01 and p_sum01 different by
+ * only one line of code.*/
 
-/* simple for loop with manual loop unrolling (X4) */
+struct _piter {
+    Py_ssize_t length;  /* a.shape[axis] */
+    Py_ssize_t astride; /* a.strides[axis] */
+    npy_intp   nits;    /* number of iterations iterator plans to make */
+    npy_intp   yshape[NPY_MAXDIMS];    /* a.shape, a.shape[axis] removed */
+    char       **ppa;    /* array of pointers to start of each slice */
+};
+typedef struct _piter piter;
 
-/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(sum01, DTYPE0)
+static BN_INLINE void
+init_piter(piter *it, PyArrayObject *a, int axis, PyObject **y, int ydtype)
 {
-    INIT(DTYPE0, DTYPE0)
-    if (LENGTH < 4) {
-        WHILE {
-            npy_DTYPE0 asum = 0;
-            FOR asum += AI(DTYPE0);
-            YPP = asum;
-            NEXT
-        }
+    const int ndim = PyArray_NDIM(a);
+    char *pa = PyArray_BYTES(a);
+
+    if (ndim == 2) {
+
+        int i;
+        int axis_reduce;
+        npy_intp yshape[1];
+        npy_intp stride;
+
+        it->length = PyArray_DIM(a, axis);
+        it->astride = PyArray_STRIDE(a, axis);
+
+        axis_reduce = axis == 0 ? 1 : 0;
+        stride = PyArray_STRIDE(a, axis_reduce);
+        it->nits = PyArray_DIM(a, axis_reduce);
+
+        it->ppa = malloc(it->nits * sizeof(char*));
+        it->ppa[0] = pa;
+        for (i = 1; i < it->nits; i++) {
+            it->ppa[i] = pa + i * stride;
+        } 
+
+        yshape[0] = it->nits;
+        *y = PyArray_EMPTY(1, yshape, ydtype, 0);
+
     }
     else {
-        WHILE {
-            Py_ssize_t i = 4;
-            Py_ssize_t repeat = LENGTH - LENGTH % 4;
-            npy_DTYPE0 s[4];
-            s[0] = AX(DTYPE0, 0);
-            s[1] = AX(DTYPE0, 1);
-            s[2] = AX(DTYPE0, 2);
-            s[3] = AX(DTYPE0, 3);
-            for (; i < repeat; i += 4) {
-                s[0] += AX(DTYPE0, i);
-                s[1] += AX(DTYPE0, i + 1);
-                s[2] += AX(DTYPE0, i + 2);
-                s[3] += AX(DTYPE0, i + 3);
+        int i, j = 0;
+        const npy_intp *shape = PyArray_SHAPE(a);
+        const npy_intp *strides = PyArray_STRIDES(a);
+        npy_intp yshape[NPY_MAXDIMS];
+        npy_intp indices[NPY_MAXDIMS];
+        npy_intp astrides[NPY_MAXDIMS];
+        it->length = shape[axis];
+        it->astride = strides[axis];
+        it->nits = 1;
+        for (i = 0; i < ndim; i++) {
+            if (i == axis) {
+                continue;
             }
-            for (; i < LENGTH; i++) {
-                s[0] += AX(DTYPE0, i);
+            else {
+                indices[j] = 0;
+                astrides[j] = strides[i];
+                yshape[j] = shape[i];
+                it->nits *= shape[i];
+                j++;
             }
-            YPP = s[0] + s[1] + s[2] + s[3];
-            NEXT
         }
+        it->ppa = malloc(it->nits * sizeof(char*));
+        for (j = 0; j < it->nits; j++) {
+            it->ppa[j] = pa;
+            for (i = ndim - 2; i > -1; i--) {
+                if (indices[i] < yshape[i] - 1) {
+                    pa += astrides[i];
+                    indices[i]++;
+                    break;
+                }
+                pa -= indices[i] * astrides[i];
+                indices[i] = 0;
+            }
+        }
+        *y = PyArray_EMPTY(ndim - 1, yshape, ydtype, 0);
     }
+}
+
+
+/* repeat = {'NAME': ['sum01', 'p_sum01'],
+             'PARALLEL': ['', '#pragma omp parallel for']} */
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE(NAME, DTYPE0)
+{
+    npy_intp its;
+    PyObject *y;
+    npy_DTYPE0 *py;
+    piter it;
+    init_piter(&it, a, axis, &y, NPY_DTYPE0);
+    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    PARALLEL
+    for (its = 0; its < it.nits; its++) {
+        npy_intp i;
+        npy_DTYPE0 s = 0;
+        for (i = 0; i < it.length; i++) {
+            s += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+        }
+        py[its] = s;
+    }
+    free(it.ppa);
     return y;
 }
 /* dtype end */
 
-REDUCE_MAIN(sum01)
+REDUCE_MAIN(NAME)
+/* repeat end */
 
+/* sum02, p_sum02 -------------------------------------------------------- */
 
-/* sum02 ----------------------------------------------------------------- */
+/* loop unrolling (x4)*/
+
+/* repeat = {'NAME': ['sum02', 'p_sum02'],
+             'PARALLEL': ['', '#pragma omp parallel for']} */
+/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
+REDUCE(NAME, DTYPE0)
+{
+    npy_intp its;
+    PyObject *y;
+    npy_DTYPE0 *py;
+    piter it;
+    init_piter(&it, a, axis, &y, NPY_DTYPE0);
+    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
+    if (it.length < 4) {
+        PARALLEL
+        for (its = 0; its < it.nits; its++) {
+            npy_intp i;
+            npy_DTYPE0 s = 0;
+            for (i = 0; i < it.length; i++) {
+                s += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+            }
+            py[its] = s;
+        }
+    }
+    else {
+        Py_ssize_t i_unroll = it.length - it.length % 4;
+        PARALLEL
+        for (its = 0; its < it.nits; its++) {
+            Py_ssize_t i = 4;
+            npy_DTYPE0 s[4];
+            s[0] = *(npy_DTYPE0 *)(it.ppa[its] + 0 * it.astride);
+            s[1] = *(npy_DTYPE0 *)(it.ppa[its] + 1 * it.astride);
+            s[2] = *(npy_DTYPE0 *)(it.ppa[its] + 2 * it.astride);
+            s[3] = *(npy_DTYPE0 *)(it.ppa[its] + 3 * it.astride);
+            for (; i < i_unroll; i += 4) {
+                s[0] += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+                s[1] += *(npy_DTYPE0 *)(it.ppa[its] + (i+1) * it.astride);
+                s[2] += *(npy_DTYPE0 *)(it.ppa[its] + (i+2) * it.astride);
+                s[3] += *(npy_DTYPE0 *)(it.ppa[its] + (i+3) * it.astride);
+            }
+            for (; i < it.length; i++) {
+                s[0] += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+            }
+            py[its] = s[0] + s[1] + s[2] + s[3];
+        }
+    }
+    free(it.ppa);
+    return y;
+}
+/* dtype end */
+
+REDUCE_MAIN(NAME)
+/* repeat end */
+
+/* sum03 ----------------------------------------------------------------- */
 
 /* add special casing for summing along non-fast axis */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 static PyObject *
-sum02_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
+sum03_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
@@ -140,24 +268,24 @@ sum02_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 /* dtype end */
 
 static PyObject *
-sum02(PyObject *self, PyObject *args, PyObject *kwds)
+sum03(PyObject *self, PyObject *args, PyObject *kwds)
 {
     return reducer02(args,
                      kwds,
-                     sum02_float64,
-                     sum02_float32,
-                     sum02_int64,
-                     sum02_int32);
+                     sum03_float64,
+                     sum03_float32,
+                     sum03_int64,
+                     sum03_int32);
 }
 
 
-/* sum03 ----------------------------------------------------------------- */
+/* sum04 ----------------------------------------------------------------- */
 
 /* loop unrolling of special casing for summing along non-fast axis */
 
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 static PyObject *
-sum03_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
+sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
@@ -225,18 +353,18 @@ sum03_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 /* dtype end */
 
 static PyObject *
-sum03(PyObject *self, PyObject *args, PyObject *kwds)
+sum04(PyObject *self, PyObject *args, PyObject *kwds)
 {
     return reducer02(args,
                      kwds,
-                     sum03_float64,
-                     sum03_float32,
-                     sum03_int64,
-                     sum03_int32);
+                     sum04_float64,
+                     sum04_float32,
+                     sum04_int64,
+                     sum04_int32);
 }
 
 
-/* sum04 ----------------------------------------------------------------- */
+/* sum05 ----------------------------------------------------------------- */
 
 /* simd: sse3 */
 
@@ -251,7 +379,7 @@ calc_peel(const void * addr, const npy_uintp esize, const npy_uintp alignment)
 
 /* dtype = [['float64']] */
 static PyObject *
-sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
+sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
     PyObject *y;
     if (axis == fast_axis) {
@@ -296,211 +424,6 @@ sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
                 vsum0 = _mm_add_pd(vsum0, vsum1);
                 vsum0 = _mm_hadd_pd(vsum0, vsum0);
                 _mm_storeh_pd(&sum_simd, vsum0);
-                for (; i < LENGTH; i++) {
-                    sum += ad[i];
-                }
-                YPP = sum + sum_simd;
-                NEXT
-            }
-        }
-    }
-    else {
-        INIT2(DTYPE0, DTYPE0)
-        if (LENGTH < 9) {
-            WHILE {
-                FOR {
-                    YI(DTYPE0) += AI(DTYPE0);
-                }
-                NEXT2
-            }
-        }
-        else {
-            if (!IS_CONTIGUOUS(a) || LENGTH & 1 || (npy_uintp)it.pa & 15) {
-                const Py_ssize_t repeat = LENGTH - LENGTH % 4;
-                WHILE {
-                    npy_intp i = 0;
-                    for (; i < repeat; i += 4) {
-                        YX(DTYPE0, i) += AX(DTYPE0, i);
-                        YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
-                        YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
-                        YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
-                    }
-                    for (; i < LENGTH; i++) {
-                        YX(DTYPE0, i) += AX(DTYPE0, i);
-                    }
-                    NEXT2
-                }
-            }
-            else {
-                const Py_ssize_t i_simd = LENGTH - LENGTH % 8;
-                WHILE {
-                    double *ad = (double *)it.pa;
-                    double *yd = (double *)it.py;
-                    npy_intp i = 0;
-                    for (; i < i_simd; i += 8)
-                    {
-                        __m128d a0 = _mm_load_pd(&ad[i]);
-                        __m128d a1 = _mm_load_pd(&ad[i + 2]);
-                        __m128d a2 = _mm_load_pd(&ad[i + 4]);
-                        __m128d a3 = _mm_load_pd(&ad[i + 6]);
-
-                        __m128d y0 = _mm_load_pd(&yd[i]);
-                        __m128d y1 = _mm_load_pd(&yd[i + 2]);
-                        __m128d y2 = _mm_load_pd(&yd[i + 4]);
-                        __m128d y3 = _mm_load_pd(&yd[i + 6]);
-
-                        _mm_store_pd(&yd[i],     _mm_add_pd(y0, a0));
-                        _mm_store_pd(&yd[i + 2], _mm_add_pd(y1, a1));
-                        _mm_store_pd(&yd[i + 4], _mm_add_pd(y2, a2));
-                        _mm_store_pd(&yd[i + 6], _mm_add_pd(y3, a3));
-                    }
-                    for (; i < LENGTH; i++) {
-                        yd[i] += ad[i];
-                    }
-                    NEXT2
-                }
-            }
-        }
-    }
-    return y;
-}
-/* dtype end */
-
-/* dtype = [['float32'], ['int64'], ['int32']] */
-static PyObject *
-sum04_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
-{
-    PyObject *y;
-    if (axis == fast_axis) {
-        INIT01(DTYPE0, DTYPE0)
-        if (LENGTH < 4) {
-            WHILE {
-                npy_DTYPE0 asum = 0;
-                FOR asum += AI(DTYPE0);
-                YPP = asum;
-                NEXT
-            }
-        }
-        else {
-            WHILE {
-                Py_ssize_t i;
-                Py_ssize_t repeat = LENGTH - LENGTH % 4;
-                npy_DTYPE0 s[4];
-                s[0] = AX(DTYPE0, 0);
-                s[1] = AX(DTYPE0, 1);
-                s[2] = AX(DTYPE0, 2);
-                s[3] = AX(DTYPE0, 3);
-                for (i = 4; i < repeat; i += 4) {
-                    s[0] += AX(DTYPE0, i);
-                    s[1] += AX(DTYPE0, i + 1);
-                    s[2] += AX(DTYPE0, i + 2);
-                    s[3] += AX(DTYPE0, i + 3);
-                }
-                for (i = i; i < LENGTH; i++) {
-                    s[0] += AX(DTYPE0, i);
-                }
-                YPP = s[0] + s[1] + s[2] + s[3];
-                NEXT
-            }
-        }
-    }
-    else {
-        INIT2(DTYPE0, DTYPE0)
-        if (LENGTH < 4) {
-            WHILE {
-                FOR {
-                    YI(DTYPE0) += AI(DTYPE0);
-                }
-                NEXT2
-            }
-        }
-        else {
-            npy_intp i;
-            Py_ssize_t repeat = LENGTH - LENGTH % 4;
-            WHILE {
-                for (i = 0; i < repeat; i += 4) {
-                    YX(DTYPE0, i) += AX(DTYPE0, i);
-                    YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
-                    YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
-                    YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
-                }
-                for (i = i; i < LENGTH; i++) {
-                    YX(DTYPE0, i) += AX(DTYPE0, i);
-                }
-                NEXT2
-            }
-        }
-    }
-    return y;
-}
-/* dtype end */
-
-static PyObject *
-sum04(PyObject *self, PyObject *args, PyObject *kwds)
-{
-    return reducer02(args,
-                     kwds,
-                     sum04_float64,
-                     sum04_float32,
-                     sum04_int64,
-                     sum04_int32);
-}
-
-
-/* sum05 ----------------------------------------------------------------- */
-
-/* simd: avx */
-
-/* dtype = [['float64']] */
-static PyObject *
-sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
-{
-    PyObject *y;
-    if (axis == fast_axis) {
-        INIT01(DTYPE0, DTYPE0)
-        if (LENGTH < 19 || !IS_CONTIGUOUS(a)) {
-            /* could loop unroll here */
-            WHILE {
-                npy_DTYPE0 asum = 0;
-                FOR asum += AI(DTYPE0);
-                YPP = asum;
-                NEXT
-            }
-        }
-        else {
-            Py_ssize_t i_simd = LENGTH - LENGTH % 16;
-            WHILE {
-                double sum_simd, sum = 0.0;
-                double *ad = (double *)it.pa;
-                __m256d vsum0, vsum1, vsum2, vsum3;
-                npy_uintp peel = calc_peel(ad, sizeof(double), 32);
-                npy_intp i = 0;
-                for (; i < peel; i++) {
-                    sum += ad[i];
-                }
-                vsum0 = _mm256_load_pd(&ad[peel + 0]);
-                vsum1 = _mm256_load_pd(&ad[peel + 4]);
-                vsum2 = _mm256_load_pd(&ad[peel + 8]);
-                vsum3 = _mm256_load_pd(&ad[peel + 12]);
-                for (i = i + 16; i < i_simd + peel; i += 16)
-                {
-                    __m256d v0 = _mm256_load_pd(&ad[i]);
-                    __m256d v1 = _mm256_load_pd(&ad[i + 4]);
-                    __m256d v2 = _mm256_load_pd(&ad[i + 8]);
-                    __m256d v3 = _mm256_load_pd(&ad[i + 12]);
-                    vsum0 = _mm256_add_pd(vsum0, v0);
-                    vsum1 = _mm256_add_pd(vsum1, v1);
-                    vsum2 = _mm256_add_pd(vsum2, v2);
-                    vsum3 = _mm256_add_pd(vsum3, v3);
-                }
-                vsum0 = _mm256_add_pd(vsum0, vsum1);
-                vsum1 = _mm256_add_pd(vsum2, vsum3);
-                vsum0 = _mm256_add_pd(vsum0, vsum1);
-	            vsum0 = _mm256_add_pd(vsum0,
-                        _mm256_permute2f128_pd(vsum0, vsum0, 0x1));
-	            _mm_store_sd(&sum_simd,
-                             _mm_hadd_pd(_mm256_castpd256_pd128(vsum0),
-                                         _mm256_castpd256_pd128(vsum0)));
                 for (; i < LENGTH; i++) {
                     sum += ad[i];
                 }
@@ -651,240 +574,210 @@ sum05(PyObject *self, PyObject *args, PyObject *kwds)
                      sum05_int32);
 }
 
-/* sum06, sum07 ---------------------------------------------------------- */
 
-/* It would be a lot of work to have a separate code base for single-threaded
- * and multi-threaded versions of the same function. Is there a way to use
- * the same code base for both versions? I think I came up with one.
- *
- * sum07 is the multi-threaded (OpenMP) version of sum00. And sum06 is (the
- * single-threaded version of sum00. Note that sum06 and sum07 different only
- * by one line of code.*/
+/* sum06 ----------------------------------------------------------------- */
 
-struct _piter {
-    Py_ssize_t length;  /* a.shape[axis] */
-    Py_ssize_t astride; /* a.strides[axis] */
-    npy_intp   nits;    /* number of iterations iterator plans to make */
-    npy_intp   yshape[NPY_MAXDIMS];    /* a.shape, a.shape[axis] removed */
-    char       **ppa;    /* array of pointers to start of each slice */
-};
-typedef struct _piter piter;
+/* simd: avx */
 
-static BN_INLINE void
-init_piter(piter *it, PyArrayObject *a, int axis, PyObject **y, int ydtype)
+/* dtype = [['float64']] */
+static PyObject *
+sum06_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
-    const int ndim = PyArray_NDIM(a);
-    char *pa = PyArray_BYTES(a);
-
-    if (ndim == 2) {
-
-        int i;
-        int axis_reduce;
-        npy_intp yshape[1];
-        npy_intp stride;
-
-        it->length = PyArray_DIM(a, axis);
-        it->astride = PyArray_STRIDE(a, axis);
-
-        axis_reduce = axis == 0 ? 1 : 0;
-        stride = PyArray_STRIDE(a, axis_reduce);
-        it->nits = PyArray_DIM(a, axis_reduce);
-
-        it->ppa = malloc(it->nits * sizeof(char*));
-        it->ppa[0] = pa;
-        for (i = 1; i < it->nits; i++) {
-            it->ppa[i] = pa + i * stride;
-        } 
-
-        yshape[0] = it->nits;
-        *y = PyArray_EMPTY(1, yshape, ydtype, 0);
-
-    }
-    else {
-        int i, j = 0;
-        const npy_intp *shape = PyArray_SHAPE(a);
-        const npy_intp *strides = PyArray_STRIDES(a);
-        npy_intp yshape[NPY_MAXDIMS];
-        npy_intp indices[NPY_MAXDIMS];
-        npy_intp astrides[NPY_MAXDIMS];
-        it->length = shape[axis];
-        it->astride = strides[axis];
-        it->nits = 1;
-        for (i = 0; i < ndim; i++) {
-            if (i == axis) {
-                continue;
-            }
-            else {
-                indices[j] = 0;
-                astrides[j] = strides[i];
-                yshape[j] = shape[i];
-                it->nits *= shape[i];
-                j++;
-            }
-        }
-        it->ppa = malloc(it->nits * sizeof(char*));
-        for (j = 0; j < it->nits; j++) {
-            it->ppa[j] = pa;
-            for (i = ndim - 2; i > -1; i--) {
-                if (indices[i] < yshape[i] - 1) {
-                    pa += astrides[i];
-                    indices[i]++;
-                    break;
-                }
-                pa -= indices[i] * astrides[i];
-                indices[i] = 0;
-            }
-        }
-        *y = PyArray_EMPTY(ndim - 1, yshape, ydtype, 0);
-    }
-}
-
-
-/* repeat = {'NAME': ['sum06', 'sum07'],
-             'PARALLEL': ['',   '#pragma omp parallel for']} */
-/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(NAME, DTYPE0)
-{
-    npy_intp its;
     PyObject *y;
-    npy_DTYPE0 *py;
-    piter it;
-    init_piter(&it, a, axis, &y, NPY_DTYPE0);
-    py = (npy_DTYPE0 *)PyArray_DATA((PyArrayObject *)y);
-    PARALLEL
-    for (its = 0; its < it.nits; its++) {
-        npy_intp i;
-        npy_DTYPE0 s = 0;
-        for (i = 0; i < it.length; i++) {
-            s += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+    if (axis == fast_axis) {
+        INIT01(DTYPE0, DTYPE0)
+        if (LENGTH < 19 || !IS_CONTIGUOUS(a)) {
+            /* could loop unroll here */
+            WHILE {
+                npy_DTYPE0 asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
+            }
         }
-        py[its] = s;
-    }
-    free(it.ppa);
-    return y;
-}
-/* dtype end */
-
-REDUCE_MAIN(NAME)
-/* repeat end */
-
-/* sum08 ----------------------------------------------------------------- */
-
-/* OpenMP + loop unrolling (x4)*/
-
-static BN_INLINE char**
-slice_starts(npy_intp *yshape, npy_intp *nits, PyArrayObject *a, int axis)
-{
-    const int ndim = PyArray_NDIM(a);
-    char *pa = PyArray_BYTES(a);
-    char **ppa;
-
-    if (ndim == 2) {
-        int i;
-        npy_intp stride;
-        int ax = axis == 0 ? 1 : 0;
-        stride = PyArray_STRIDE(a, ax);
-        *nits = PyArray_DIM(a, ax);
-        ppa = malloc(*nits * sizeof(char*));
-        ppa[0] = pa;
-        for (i = 1; i < *nits; i++) {
-            ppa[i] = pa + i * stride;
-        } 
-        yshape[0] = *nits;
+        else {
+            Py_ssize_t i_simd = LENGTH - LENGTH % 16;
+            WHILE {
+                double sum_simd, sum = 0.0;
+                double *ad = (double *)it.pa;
+                __m256d vsum0, vsum1, vsum2, vsum3;
+                npy_uintp peel = calc_peel(ad, sizeof(double), 32);
+                npy_intp i = 0;
+                for (; i < peel; i++) {
+                    sum += ad[i];
+                }
+                vsum0 = _mm256_load_pd(&ad[peel + 0]);
+                vsum1 = _mm256_load_pd(&ad[peel + 4]);
+                vsum2 = _mm256_load_pd(&ad[peel + 8]);
+                vsum3 = _mm256_load_pd(&ad[peel + 12]);
+                for (i = i + 16; i < i_simd + peel; i += 16)
+                {
+                    __m256d v0 = _mm256_load_pd(&ad[i]);
+                    __m256d v1 = _mm256_load_pd(&ad[i + 4]);
+                    __m256d v2 = _mm256_load_pd(&ad[i + 8]);
+                    __m256d v3 = _mm256_load_pd(&ad[i + 12]);
+                    vsum0 = _mm256_add_pd(vsum0, v0);
+                    vsum1 = _mm256_add_pd(vsum1, v1);
+                    vsum2 = _mm256_add_pd(vsum2, v2);
+                    vsum3 = _mm256_add_pd(vsum3, v3);
+                }
+                vsum0 = _mm256_add_pd(vsum0, vsum1);
+                vsum1 = _mm256_add_pd(vsum2, vsum3);
+                vsum0 = _mm256_add_pd(vsum0, vsum1);
+	            vsum0 = _mm256_add_pd(vsum0,
+                        _mm256_permute2f128_pd(vsum0, vsum0, 0x1));
+	            _mm_store_sd(&sum_simd,
+                             _mm_hadd_pd(_mm256_castpd256_pd128(vsum0),
+                                         _mm256_castpd256_pd128(vsum0)));
+                for (; i < LENGTH; i++) {
+                    sum += ad[i];
+                }
+                YPP = sum + sum_simd;
+                NEXT
+            }
+        }
     }
     else {
-        int i, j = 0;
-        const npy_intp *shape = PyArray_SHAPE(a);
-        const npy_intp *strides = PyArray_STRIDES(a);
-        npy_intp indices[NPY_MAXDIMS];
-        npy_intp astrides[NPY_MAXDIMS];
-        *nits = 1;
-        for (i = 0; i < ndim; i++) {
-            if (i == axis) {
-                continue;
+        INIT2(DTYPE0, DTYPE0)
+        if (LENGTH < 9) {
+            WHILE {
+                FOR {
+                    YI(DTYPE0) += AI(DTYPE0);
+                }
+                NEXT2
+            }
+        }
+        else {
+            if (!IS_CONTIGUOUS(a) || LENGTH & 1 || (npy_uintp)it.pa & 15) {
+                const Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                WHILE {
+                    npy_intp i = 0;
+                    for (; i < repeat; i += 4) {
+                        YX(DTYPE0, i) += AX(DTYPE0, i);
+                        YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
+                        YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
+                        YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
+                    }
+                    for (; i < LENGTH; i++) {
+                        YX(DTYPE0, i) += AX(DTYPE0, i);
+                    }
+                    NEXT2
+                }
             }
             else {
-                indices[j] = 0;
-                astrides[j] = strides[i];
-                yshape[j] = shape[i];
-                *nits *= shape[i];
-                j++;
-            }
-        }
-        ppa = malloc(*nits * sizeof(char*));
-        for (j = 0; j < *nits; j++) {
-            ppa[j] = pa;
-            for (i = ndim - 2; i > -1; i--) {
-                if (indices[i] < yshape[i] - 1) {
-                    pa += astrides[i];
-                    indices[i]++;
-                    break;
+                const Py_ssize_t i_simd = LENGTH - LENGTH % 8;
+                WHILE {
+                    double *ad = (double *)it.pa;
+                    double *yd = (double *)it.py;
+                    npy_intp i = 0;
+                    for (; i < i_simd; i += 8)
+                    {
+                        __m128d a0 = _mm_load_pd(&ad[i]);
+                        __m128d a1 = _mm_load_pd(&ad[i + 2]);
+                        __m128d a2 = _mm_load_pd(&ad[i + 4]);
+                        __m128d a3 = _mm_load_pd(&ad[i + 6]);
+
+                        __m128d y0 = _mm_load_pd(&yd[i]);
+                        __m128d y1 = _mm_load_pd(&yd[i + 2]);
+                        __m128d y2 = _mm_load_pd(&yd[i + 4]);
+                        __m128d y3 = _mm_load_pd(&yd[i + 6]);
+
+                        _mm_store_pd(&yd[i],     _mm_add_pd(y0, a0));
+                        _mm_store_pd(&yd[i + 2], _mm_add_pd(y1, a1));
+                        _mm_store_pd(&yd[i + 4], _mm_add_pd(y2, a2));
+                        _mm_store_pd(&yd[i + 6], _mm_add_pd(y3, a3));
+                    }
+                    for (; i < LENGTH; i++) {
+                        yd[i] += ad[i];
+                    }
+                    NEXT2
                 }
-                pa -= indices[i] * astrides[i];
-                indices[i] = 0;
             }
         }
     }
-    return ppa;
-}
-
-#define P_INIT(dtype, a, axis) \
-    int ndim = PyArray_NDIM(a); \
-    Py_ssize_t length = PyArray_DIM(a, axis); \
-    Py_ssize_t astride = PyArray_STRIDE(a, axis); \
-    npy_intp its; \
-    npy_intp nits; \
-    npy_intp yshape[NPY_MAXDIMS]; \
-    char **ppa = slice_starts(yshape, &nits, a, axis); \
-    PyObject *y = PyArray_EMPTY(ndim - 1, yshape, NPY_##dtype, 0); \
-    npy_##dtype *py = (npy_##dtype *)PyArray_DATA((PyArrayObject *)y);
-
-#define P_RETURN \
-    free(ppa); \
     return y;
-
-/* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
-REDUCE(sum08, DTYPE0)
-{
-    P_INIT(DTYPE0, a, axis)
-    if (length < 4) {
-        #pragma omp parallel for
-        for (its = 0; its < nits; its++) {
-            npy_intp i;
-            npy_DTYPE0 s = 0;
-            for (i = 0; i < length; i++) {
-                s += *(npy_DTYPE0 *)(ppa[its] + i * astride);
-            }
-            py[its] = s;
-        }
-    }
-    else {
-        Py_ssize_t i_unroll = length - length % 4;
-        #pragma omp parallel for
-        for (its = 0; its < nits; its++) {
-            Py_ssize_t i = 4;
-            npy_DTYPE0 s[4];
-            s[0] = *(npy_DTYPE0 *)(ppa[its] + 0 * astride);
-            s[1] = *(npy_DTYPE0 *)(ppa[its] + 1 * astride);
-            s[2] = *(npy_DTYPE0 *)(ppa[its] + 2 * astride);
-            s[3] = *(npy_DTYPE0 *)(ppa[its] + 3 * astride);
-            for (; i < i_unroll; i += 4) {
-                s[0] += *(npy_DTYPE0 *)(ppa[its] + i * astride);
-                s[1] += *(npy_DTYPE0 *)(ppa[its] + (i+1) * astride);
-                s[2] += *(npy_DTYPE0 *)(ppa[its] + (i+2) * astride);
-                s[3] += *(npy_DTYPE0 *)(ppa[its] + (i+3) * astride);
-            }
-            for (; i < length; i++) {
-                s[0] += *(npy_DTYPE0 *)(ppa[its] + i * astride);
-            }
-            py[its] = s[0] + s[1] + s[2] + s[3];
-        }
-    }
-    P_RETURN
 }
 /* dtype end */
 
-REDUCE_MAIN(sum08)
+/* dtype = [['float32'], ['int64'], ['int32']] */
+static PyObject *
+sum06_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
+{
+    PyObject *y;
+    if (axis == fast_axis) {
+        INIT01(DTYPE0, DTYPE0)
+        if (LENGTH < 4) {
+            WHILE {
+                npy_DTYPE0 asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
+            }
+        }
+        else {
+            WHILE {
+                Py_ssize_t i;
+                Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                npy_DTYPE0 s[4];
+                s[0] = AX(DTYPE0, 0);
+                s[1] = AX(DTYPE0, 1);
+                s[2] = AX(DTYPE0, 2);
+                s[3] = AX(DTYPE0, 3);
+                for (i = 4; i < repeat; i += 4) {
+                    s[0] += AX(DTYPE0, i);
+                    s[1] += AX(DTYPE0, i + 1);
+                    s[2] += AX(DTYPE0, i + 2);
+                    s[3] += AX(DTYPE0, i + 3);
+                }
+                for (i = i; i < LENGTH; i++) {
+                    s[0] += AX(DTYPE0, i);
+                }
+                YPP = s[0] + s[1] + s[2] + s[3];
+                NEXT
+            }
+        }
+    }
+    else {
+        INIT2(DTYPE0, DTYPE0)
+        if (LENGTH < 4) {
+            WHILE {
+                FOR {
+                    YI(DTYPE0) += AI(DTYPE0);
+                }
+                NEXT2
+            }
+        }
+        else {
+            npy_intp i;
+            Py_ssize_t repeat = LENGTH - LENGTH % 4;
+            WHILE {
+                for (i = 0; i < repeat; i += 4) {
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
+                    YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
+                    YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
+                    YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
+                }
+                for (i = i; i < LENGTH; i++) {
+                    YX(DTYPE0, i) += AX(DTYPE0, i);
+                }
+                NEXT2
+            }
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+static PyObject *
+sum06(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    return reducer02(args,
+                     kwds,
+                     sum06_float64,
+                     sum06_float32,
+                     sum06_int64,
+                     sum06_int32);
+}
 
 
 /* python strings -------------------------------------------------------- */
@@ -1221,15 +1114,15 @@ MULTILINE STRING END */
 
 static PyMethodDef
 sums_methods[] = {
-    {"sum00", (PyCFunction)sum00, VARKEY, sum_doc},
-    {"sum01", (PyCFunction)sum01, VARKEY, sum_doc},
-    {"sum02", (PyCFunction)sum02, VARKEY, sum_doc},
-    {"sum03", (PyCFunction)sum03, VARKEY, sum_doc},
-    {"sum04", (PyCFunction)sum04, VARKEY, sum_doc},
-    {"sum05", (PyCFunction)sum05, VARKEY, sum_doc},
-    {"sum06", (PyCFunction)sum06, VARKEY, sum_doc},
-    {"sum07", (PyCFunction)sum07, VARKEY, sum_doc},
-    {"sum08", (PyCFunction)sum08, VARKEY, sum_doc},
+    {"sum00",   (PyCFunction)sum00,   VARKEY, sum_doc},
+    {"sum01",   (PyCFunction)sum01,   VARKEY, sum_doc},
+    {"p_sum01", (PyCFunction)p_sum01, VARKEY, sum_doc},
+    {"sum02",   (PyCFunction)sum02,   VARKEY, sum_doc},
+    {"p_sum02", (PyCFunction)p_sum02, VARKEY, sum_doc},
+    {"sum03",   (PyCFunction)sum03,   VARKEY, sum_doc},
+    {"sum04",   (PyCFunction)sum04,   VARKEY, sum_doc},
+    {"sum05",   (PyCFunction)sum05,   VARKEY, sum_doc},
+    {"sum06",   (PyCFunction)sum06,   VARKEY, sum_doc},
     {NULL, NULL, 0, NULL}
 };
 

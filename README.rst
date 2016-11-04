@@ -18,8 +18,8 @@ require different optimizations.
 My goal is to find fast ways to implement reduction functions (sum, mean,
 std, max, nansum, etc.) that are bound by memory I/O. I chose summation as a
 test case because very little time is spent with arithmetic which makes it
-easier to measure improvements from things like manual loop unrolling (sum01,
-sum02, sum03), SSE3 (sum04), AVX (sum05), and OpenMP (sum07, sum08).
+easier to measure improvements from things like manual loop unrolling (sum02,
+sum03, sum04), SSE3 (sum05), AVX (sum06), and OpenMP (p_sum00, p_sum01).
 
 some_sums is based on code from `bottleneck`_. It comes with a benchmark
 suite::
@@ -33,15 +33,15 @@ suite::
             (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float64     int64     float64     int64
              axis=1     axis=0     axis=0     axis=1     axis=1     score
-    sum00     3.45       0.28       0.49       0.46       0.83       0.54
-    sum01     7.48       0.37       0.50       1.09       1.28       0.76
-    sum02     8.44       0.67       1.01       1.11       1.46       1.20
-    sum03     8.33       0.84       1.24       1.08       1.31       1.31
-    sum04    12.93       1.14       1.22       1.44       1.37       1.56
-    sum05    15.03       1.24       1.15       1.36       1.33       1.55
-    sum06     3.46       0.26       0.54       0.47       1.04       0.55
-    sum07     1.43       1.34       2.11       2.92       4.28       2.00
-    sum08     1.87       1.47       2.32       4.24       6.03       2.44
+    sum00     3.35       0.35       0.63       0.46       0.83       0.61
+    sum01     3.26       0.35       0.65       0.46       1.04       0.64
+    sum02     7.21       0.47       0.71       1.16       1.41       0.96
+    sum03     7.68       0.64       0.91       1.16       1.39       1.14
+    sum04     7.59       0.83       1.20       1.09       1.40       1.31
+    sum05    11.48       1.22       1.22       1.40       1.42       1.59
+    sum06    14.90       1.20       1.20       1.45       1.41       1.60
+    p_sum01   1.41       1.06       2.10       2.79       3.63       1.81
+    p_sum02   1.85       1.48       2.28       4.32       5.59       2.42
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
 should be possible to beat NumPy's performance. That's because some_sums has
@@ -69,15 +69,15 @@ Let's look at function call overhead by benchmarking with small input arrays::
              (1,1)     (10,10)    (40,40)    (60,60)   (100,100)
             float64    float64    float64    float64    float64
              axis=1     axis=1     axis=1     axis=1     axis=1     score
-    sum00    22.80      14.22       2.54       1.66       0.99       2.35
-    sum01    22.50      17.29       6.27       3.97       2.48       5.45
-    sum02    22.21      17.09       6.41       4.07       2.56       5.58
-    sum03    21.83      17.11       6.40       4.07       2.53       5.55
-    sum04    22.17      18.43       8.45       5.67       3.59       7.44
-    sum05    22.00      13.78       7.46       5.20       3.06       6.49
-    sum06    18.67      15.32       3.30       1.89       1.05       2.62
-    sum07     1.71       1.91       2.26       2.23       2.79       2.12
-    sum08     1.90       1.91       2.48       2.06       3.51       2.25
+    sum00    21.42      15.13       3.23       1.81       0.99       2.51
+    sum01    17.70      14.99       3.27       1.97       1.05       2.64
+    sum02    17.49      16.34       6.34       4.28       2.61       5.60
+    sum03    20.94      16.33       6.17       4.13       2.54       5.51
+    sum04    21.09      16.46       6.18       4.11       2.54       5.51
+    sum05    20.80      17.40       8.29       5.50       3.43       7.15
+    sum06    20.85      14.64       7.27       4.81       2.95       6.24
+    p_sum01   1.83       1.37       2.19       2.53       2.79       2.01
+    p_sum02   1.72       1.88       2.40       2.93       3.33       2.30
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have
@@ -91,6 +91,9 @@ some_sums is distributed under the GPL v3+. See the LICENSE file for details.
 Requirements
 ============
 
+Currently some_sums only compiles on GNU/Linux. `Please help`_ us with getting
+it to compile on OSX and Windows.
+
 - SSE3, AVX, x86intrin.h, OpenMP
 - Python 2.7, 3.4, 3.5
 - NumPy 1.11
@@ -102,3 +105,4 @@ Requirements
 .. _share: https://github.com/kwgoodman/some_sums/issues
 .. _pairwise summation: https://en.wikipedia.org/wiki/Pairwise_summation
 .. _Let me know: https://github.com/kwgoodman/some_sums/issues
+.. _Please help: https://github.com/kwgoodman/some_sums/issues/1
