@@ -195,8 +195,6 @@ struct _piter2 {
     Py_ssize_t astride; /* a.strides[axis] */
     npy_intp   nits4;    /* number of iterations iterator plans to make */
     npy_intp   nits;    /* number of iterations iterator plans to make */
-    npy_intp   fast_nits4;    /* number of iterations iterator plans to make */
-    npy_intp   fast_nits;    /* number of iterations iterator plans to make */
     char       **ppa4;    /* array of pointers to start of each slice */
     char       **ppy4;
 };
@@ -217,7 +215,7 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype, in
     npy_intp shape4[NPY_MAXDIMS];
     npy_intp indices[NPY_MAXDIMS];
     npy_intp fast_nits;
-    npy_intp fast_nits_rem;
+    npy_intp fast_nits4;
 
     it->length = shape[axis];
     it->astride = strides[axis];
@@ -227,14 +225,14 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype, in
     it->nits = 1;
     it->nits4 = 1;
 
-    it->fast_nits4 = (it->fast_length - it->fast_length % 4) / 4;
-    it->fast_nits = it->fast_length - 4 * it->fast_nits4;
+    fast_nits4 = (it->fast_length - it->fast_length % 4) / 4;
+    fast_nits = it->fast_length - 4 * fast_nits4;
     for (i = 0; i < ndim; i++) {
         indices[i] = 0;
         if (i != axis) {
             if (i == fast_axis) {
-                it->nits4 *= it->fast_nits4;
-                it->nits *= it->fast_nits;
+                it->nits4 *= fast_nits4;
+                it->nits *= fast_nits;
             } else {
                 it->nits4 *= shape[i];
                 it->nits *= shape[i];
@@ -253,7 +251,7 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype, in
     it->ppa4 = malloc((it->nits + it->nits4) * sizeof(char*));
     it->ppy4 = malloc((it->nits + it->nits4) * sizeof(char*));
     fast_axis = fast_axis < axis ? fast_axis : fast_axis - 1;
-    shape4[fast_axis] = 4 * it->fast_nits4;
+    shape4[fast_axis] = 4 * fast_nits4;
     it->fast_ystride = ystrides[fast_axis];
     j = 0;
     for (; j < it->nits4; j++) {
@@ -286,10 +284,10 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype, in
     for (i = 0; i < ndim; i++) {
         indices[i] = 0;
     }
-    shape4[fast_axis] = it->fast_nits;
+    shape4[fast_axis] = fast_nits;
     for (; j < (it->nits + it->nits4); j++) {
-        it->ppa4[j] = pa + 4 * it->fast_nits4 * astrides[fast_axis];
-        it->ppy4[j] = py + 4 * it->fast_nits4 * ystrides[fast_axis];
+        it->ppa4[j] = pa + 4 * fast_nits4 * astrides[fast_axis];
+        it->ppy4[j] = py + 4 * fast_nits4 * ystrides[fast_axis];
         for (i = ndim - 2; i > -1; i--) {
             if (indices[i] < shape4[i] - 1) {
                 indices[i]++;
@@ -307,10 +305,8 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype, in
 #define P_INIT2(dtype) \
     npy_intp its; \
     PyObject *y; \
-    npy_##dtype *py; \
     piter2 it; \
     init_piter2(&it, a, axis, &y, NPY_##dtype, fast_axis); \
-    py = (npy_##dtype *)PyArray_DATA((PyArrayObject *)y);
 
 /* repeat = {'NAME': ['sum07', 'p_sum07'],
              'PARALLEL': ['', '#pragma omp parallel for']} */
@@ -357,45 +353,32 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
     }
     else {
         P_INIT2(DTYPE0)
-        if (it.fast_length < 4) {
-            PARALLEL
-            for (its = 0; its < it.nits; its++) {
-                npy_intp i;
-                npy_DTYPE0 s = 0;
-                for (i = 0; i < it.length; i++) {
-                    s += *(npy_DTYPE0 *)(it.ppa4[its] + i * it.astride);;
-                }
-                py[its] = s;
+        PARALLEL
+        for (its = 0; its < it.nits4; its++) {
+            Py_ssize_t i;
+            npy_DTYPE0 s[4];
+            s[0] = *(npy_DTYPE0 *)(it.ppa4[its] + 0 * it.fast_stride);
+            s[1] = *(npy_DTYPE0 *)(it.ppa4[its] + 1 * it.fast_stride);
+            s[2] = *(npy_DTYPE0 *)(it.ppa4[its] + 2 * it.fast_stride);
+            s[3] = *(npy_DTYPE0 *)(it.ppa4[its] + 3 * it.fast_stride);
+            for (i = 1; i < it.length; i++) {
+                s[0] += *(npy_DTYPE0 *)(it.ppa4[its] + 0 * it.fast_stride + i * it.astride);
+                s[1] += *(npy_DTYPE0 *)(it.ppa4[its] + 1 * it.fast_stride + i * it.astride);
+                s[2] += *(npy_DTYPE0 *)(it.ppa4[its] + 2 * it.fast_stride + i * it.astride);
+                s[3] += *(npy_DTYPE0 *)(it.ppa4[its] + 3 * it.fast_stride + i * it.astride);
             }
+            *(npy_DTYPE0 *)(it.ppy4[its] + 0 * it.fast_ystride) = s[0];
+            *(npy_DTYPE0 *)(it.ppy4[its] + 1 * it.fast_ystride) = s[1];
+            *(npy_DTYPE0 *)(it.ppy4[its] + 2 * it.fast_ystride) = s[2];
+            *(npy_DTYPE0 *)(it.ppy4[its] + 3 * it.fast_ystride) = s[3];
         }
-        else {
-            PARALLEL
-            for (its = 0; its < it.nits4; its++) {
-                Py_ssize_t i;
-                npy_DTYPE0 s[4];
-                s[0] = *(npy_DTYPE0 *)(it.ppa4[its] + 0 * it.fast_stride);
-                s[1] = *(npy_DTYPE0 *)(it.ppa4[its] + 1 * it.fast_stride);
-                s[2] = *(npy_DTYPE0 *)(it.ppa4[its] + 2 * it.fast_stride);
-                s[3] = *(npy_DTYPE0 *)(it.ppa4[its] + 3 * it.fast_stride);
-                for (i = 1; i < it.length; i++) {
-                    s[0] += *(npy_DTYPE0 *)(it.ppa4[its] + 0 * it.fast_stride + i * it.astride);
-                    s[1] += *(npy_DTYPE0 *)(it.ppa4[its] + 1 * it.fast_stride + i * it.astride);
-                    s[2] += *(npy_DTYPE0 *)(it.ppa4[its] + 2 * it.fast_stride + i * it.astride);
-                    s[3] += *(npy_DTYPE0 *)(it.ppa4[its] + 3 * it.fast_stride + i * it.astride);
-                }
-                *(npy_DTYPE0 *)(it.ppy4[its] + 0 * it.fast_ystride) = s[0];
-                *(npy_DTYPE0 *)(it.ppy4[its] + 1 * it.fast_ystride) = s[1];
-                *(npy_DTYPE0 *)(it.ppy4[its] + 2 * it.fast_ystride) = s[2];
-                *(npy_DTYPE0 *)(it.ppy4[its] + 3 * it.fast_ystride) = s[3];
+        for (its = it.nits4; its < (it.nits+it.nits4); its++) {
+            npy_intp i;
+            npy_DTYPE0 s = 0;
+            for (i = 0; i < it.length; i++) {
+                s += *(npy_DTYPE0 *)(it.ppa4[its] + i * it.astride);
             }
-            for (its = it.nits4; its < (it.nits+it.nits4); its++) {
-                npy_intp i;
-                npy_DTYPE0 s = 0;
-                for (i = 0; i < it.length; i++) {
-                    s += *(npy_DTYPE0 *)(it.ppa4[its] + i * it.astride);
-                }
-                *(npy_DTYPE0 *)(it.ppy4[its]) = s;
-            }
+            *(npy_DTYPE0 *)(it.ppy4[its]) = s;
         }
         free(it.ppa4);
         free(it.ppy4);
