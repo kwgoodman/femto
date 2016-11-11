@@ -7,7 +7,7 @@
 # functions to the top level, but move on if not successful.
 try:
     from .sums import (sum00, sum01, p_sum01, sum02, p_sum02, sum03, sum04,
-                       sum05, sum06)
+                       sum05, sum06, sum07, p_sum07)
 except:
     pass
 
