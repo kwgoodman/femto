@@ -25,5 +25,6 @@ def func_dict():
                  ss.sum06,
                  ss.p_sum01,
                  ss.p_sum02,
+                 ss.p_sum03,
                  ]
     return d

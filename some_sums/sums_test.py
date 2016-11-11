@@ -46,6 +46,13 @@ def arrays():
             yield a.T
 
 
+def get_array_number(number):
+    for i, a in enumerate(arrays()):
+        if i == number:
+            return a
+    raise ValueError("Could not find array number")
+
+
 def array_iter(dtypes=DTYPES):
     "Iterator that yields arrays to use for unit testing."
 
