@@ -19,29 +19,31 @@ My goal is to find fast ways to implement reduction functions (sum, mean,
 std, max, nansum, etc.) that are bound by memory I/O. I chose summation as a
 test case because very little time is spent with arithmetic which makes it
 easier to measure improvements from things like manual loop unrolling (sum02,
-sum03, sum04), SSE3 (sum05), AVX (sum06), and OpenMP (p_sum00, p_sum01).
+sum03, sum04), SSE3 (sum05), AVX (sum06), and OpenMP (p_sum01, p_sum02,
+p_sum03).
 
 some_sums is based on code from `bottleneck`_. It comes with a benchmark
 suite::
 
     >>> ss.bench()
     some_sums performance benchmark
-        some_sums 0.0.1dev; Numpy 1.11.2
+        some_sums 0.0.1.dev0; Numpy 1.11.2
         Speed is NumPy time divided by some_sums time
         Score is harmonic mean of speeds
 
             (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float64     int64     float64     int64
              axis=1     axis=0     axis=0     axis=1     axis=1     score
-    sum00     3.35       0.35       0.63       0.46       0.83       0.61
-    sum01     3.26       0.35       0.65       0.46       1.04       0.64
-    sum02     7.21       0.47       0.71       1.16       1.41       0.96
-    sum03     7.68       0.64       0.91       1.16       1.39       1.14
-    sum04     7.59       0.83       1.20       1.09       1.40       1.31
-    sum05    11.48       1.22       1.22       1.40       1.42       1.59
-    sum06    14.90       1.20       1.20       1.45       1.41       1.60
-    p_sum01   1.41       1.06       2.10       2.79       3.63       1.81
-    p_sum02   1.85       1.48       2.28       4.32       5.59       2.42
+    sum00     3.16       0.34       0.66       0.46       0.83       0.61
+    sum01     3.12       0.35       0.66       0.47       1.06       0.64
+    sum02     6.51       0.47       0.72       1.16       1.41       0.96
+    sum03     6.53       0.60       0.92       1.11       1.37       1.10
+    sum04     6.85       0.80       1.22       1.13       1.44       1.31
+    sum05     9.65       1.20       1.23       1.42       1.40       1.58
+    sum06    14.94       1.21       1.23       1.43       1.42       1.61
+    p_sum01   1.30       1.46       1.86       2.86       3.63       1.91
+    p_sum02   2.16       1.46       2.11       3.09       5.47       2.35
+    p_sum03   1.46       2.38       3.07       3.82       5.33       2.66
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
 should be possible to beat NumPy's performance. That's because some_sums has
@@ -62,22 +64,23 @@ Let's look at function call overhead by benchmarking with small input arrays::
 
     >>> ss.bench_overhead()
     some_sums performance benchmark
-        some_sums 0.0.1dev; Numpy 1.11.2
+        some_sums 0.0.1.dev0; Numpy 1.11.2
         Speed is NumPy time divided by some_sums time
         Score is harmonic mean of speeds
 
              (1,1)     (10,10)    (40,40)    (60,60)   (100,100)
             float64    float64    float64    float64    float64
              axis=1     axis=1     axis=1     axis=1     axis=1     score
-    sum00    21.42      15.13       3.23       1.81       0.99       2.51
-    sum01    17.70      14.99       3.27       1.97       1.05       2.64
-    sum02    17.49      16.34       6.34       4.28       2.61       5.60
-    sum03    20.94      16.33       6.17       4.13       2.54       5.51
-    sum04    21.09      16.46       6.18       4.11       2.54       5.51
-    sum05    20.80      17.40       8.29       5.50       3.43       7.15
-    sum06    20.85      14.64       7.27       4.81       2.95       6.24
-    p_sum01   1.83       1.37       2.19       2.53       2.79       2.01
-    p_sum02   1.72       1.88       2.40       2.93       3.33       2.30
+    sum00    15.10      11.25       2.41       1.39       0.94       2.13
+    sum01    13.03      10.46       2.45       1.72       1.00       2.31
+    sum02    12.82      12.10       5.35       3.74       2.43       4.87
+    sum03    13.10      11.40       5.23       3.57       2.35       4.71
+    sum04    14.94      13.49       5.70       3.81       2.43       5.05
+    sum05    14.92      14.20       7.16       5.20       3.36       6.52
+    sum06    14.78      10.97       7.56       5.03       2.99       6.07
+    p_sum01   1.59       1.79       1.79       2.09       1.97       1.83
+    p_sum02   1.42       1.71       1.81       2.22       2.74       1.88
+    p_sum03   1.86       1.68       1.97       2.10       2.47       1.99
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have
