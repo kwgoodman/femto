@@ -306,6 +306,12 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype,
     piter2 it; \
     init_piter2(&it, a, axis, &y, NPY_##dtype, fast_axis); \
 
+#define AP(dtype, p) \
+    *(npy_##dtype *)(it.ppa[its] + i * it.astride + (p) * it.fast_stride)
+
+#define YP(dtype, p) \
+    *(npy_##dtype *)(it.ppy[its] + (p) * it.fast_ystride)
+
 /* repeat = {'NAME': ['sum03', 'p_sum03'],
              'PARALLEL': ['', '#pragma omp parallel for']} */
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
@@ -353,30 +359,30 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
         P_INIT2(DTYPE0)
         PARALLEL
         for (its = 0; its < it.nits4; its++) {
-            Py_ssize_t i;
+            Py_ssize_t i = 0;
             npy_DTYPE0 s[N03];
-            s[0] = *(npy_DTYPE0 *)(it.ppa[its] + 0 * it.fast_stride);
-            s[1] = *(npy_DTYPE0 *)(it.ppa[its] + 1 * it.fast_stride);
-            s[2] = *(npy_DTYPE0 *)(it.ppa[its] + 2 * it.fast_stride);
-            s[3] = *(npy_DTYPE0 *)(it.ppa[its] + 3 * it.fast_stride);
+            s[0] = AP(DTYPE0, 0);
+            s[1] = AP(DTYPE0, 1);
+            s[2] = AP(DTYPE0, 2);
+            s[3] = AP(DTYPE0, 3);
             for (i = 1; i < it.length; i++) {
-                s[0] += *(npy_DTYPE0 *)(it.ppa[its] + 0 * it.fast_stride + i * it.astride);
-                s[1] += *(npy_DTYPE0 *)(it.ppa[its] + 1 * it.fast_stride + i * it.astride);
-                s[2] += *(npy_DTYPE0 *)(it.ppa[its] + 2 * it.fast_stride + i * it.astride);
-                s[3] += *(npy_DTYPE0 *)(it.ppa[its] + 3 * it.fast_stride + i * it.astride);
+                s[0] += AP(DTYPE0, 0);
+                s[1] += AP(DTYPE0, 1);
+                s[2] += AP(DTYPE0, 2);
+                s[3] += AP(DTYPE0, 3);
             }
-            *(npy_DTYPE0 *)(it.ppy[its] + 0 * it.fast_ystride) = s[0];
-            *(npy_DTYPE0 *)(it.ppy[its] + 1 * it.fast_ystride) = s[1];
-            *(npy_DTYPE0 *)(it.ppy[its] + 2 * it.fast_ystride) = s[2];
-            *(npy_DTYPE0 *)(it.ppy[its] + 3 * it.fast_ystride) = s[3];
+            YP(DTYPE0, 0) = s[0];
+            YP(DTYPE0, 1) = s[1];
+            YP(DTYPE0, 2) = s[2];
+            YP(DTYPE0, 3) = s[3];
         }
         for (its = it.nits4; its < it.nits; its++) {
             npy_intp i;
             npy_DTYPE0 s = 0;
             for (i = 0; i < it.length; i++) {
-                s += *(npy_DTYPE0 *)(it.ppa[its] + i * it.astride);
+                s += AP(DTYPE0, 0);
             }
-            *(npy_DTYPE0 *)(it.ppy[its]) = s;
+            YP(DTYPE0, 0) = s;
         }
         free(it.ppa);
         return y;
