@@ -193,11 +193,11 @@ struct _piter2 {
     Py_ssize_t fast_length;
     npy_intp   fast_stride;
     npy_intp   fast_ystride;
-    Py_ssize_t length;  /* a.shape[axis] */
-    Py_ssize_t astride; /* a.strides[axis] */
-    npy_intp   nits4;    /* number of iterations iterator plans to make */
-    npy_intp   nits;    /* number of iterations iterator plans to make */
-    char       **ppa;    /* array of pointers to start of each slice */
+    Py_ssize_t length;
+    Py_ssize_t astride;
+    npy_intp   nits4;
+    npy_intp   nits;
+    char       **ppa;
     char       **ppy;
 };
 typedef struct _piter2 piter2;
@@ -244,13 +244,15 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype,
             j++;
         }
     }
+    it->nits += it->nits4;
 
     *y = PyArray_EMPTY(ndim - 1, yshape, ydtype, 0);
     py = PyArray_BYTES((PyArrayObject *)*y);
     ystrides = PyArray_STRIDES((PyArrayObject *)*y);
 
-    it->ppa = malloc((it->nits + it->nits4) * sizeof(char*));
-    it->ppy = malloc((it->nits + it->nits4) * sizeof(char*));
+    it->ppa = malloc(2 * it->nits * sizeof(char*));
+    it->ppy = &it->ppa[it->nits];
+
     fast_axis = fast_axis < axis ? fast_axis : fast_axis - 1;
     yshape[fast_axis] = N03 * fast_nits4;
     it->fast_ystride = ystrides[fast_axis];
@@ -280,13 +282,8 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype,
             indices[i] = 0;
         }
     }
-    py = PyArray_BYTES((PyArrayObject *)*y);
-    pa = PyArray_BYTES(a);
-    for (i = 0; i < ndim; i++) {
-        indices[i] = 0;
-    }
     yshape[fast_axis] = fast_nits;
-    for (; j < (it->nits + it->nits4); j++) {
+    for (; j < it->nits; j++) {
         it->ppa[j] = pa + N03 * fast_nits4 * astrides[fast_axis];
         it->ppy[j] = py + N03 * fast_nits4 * ystrides[fast_axis];
         for (i = ndim - 2; i > -1; i--) {
@@ -373,7 +370,7 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
             *(npy_DTYPE0 *)(it.ppy[its] + 2 * it.fast_ystride) = s[2];
             *(npy_DTYPE0 *)(it.ppy[its] + 3 * it.fast_ystride) = s[3];
         }
-        for (its = it.nits4; its < (it.nits+it.nits4); its++) {
+        for (its = it.nits4; its < it.nits; its++) {
             npy_intp i;
             npy_DTYPE0 s = 0;
             for (i = 0; i < it.length; i++) {
@@ -382,7 +379,6 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
             *(npy_DTYPE0 *)(it.ppy[its]) = s;
         }
         free(it.ppa);
-        free(it.ppy);
         return y;
     }
 }
