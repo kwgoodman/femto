@@ -22,28 +22,48 @@ easier to measure improvements from things like manual loop unrolling (sum02,
 sum03, sum04), SSE3 (sum05), AVX (sum06), and OpenMP (p_sum01, p_sum02,
 p_sum03).
 
-some_sums is based on code from `bottleneck`_. It comes with a benchmark
-suite::
+some_sums, based on code from `bottleneck`_, comes with several benchmark
+suites::
 
-    >>> ss.bench()
+    >>> ss.bench_axis0()
     some_sums performance benchmark
         some_sums 0.0.1.dev0; Numpy 1.11.2
         Speed is NumPy time divided by some_sums time
         Score is harmonic mean of speeds
 
-            (1,1000) (1000,1000)(1000,1000)(1000,1000)(1000,1000)
-            float64    float64     int64     float64     int64
-             axis=1     axis=0     axis=0     axis=1     axis=1     score
-    sum00     3.16       0.34       0.66       0.46       0.83       0.61
-    sum01     3.12       0.35       0.66       0.47       1.06       0.64
-    sum02     6.51       0.47       0.72       1.16       1.41       0.96
-    sum03     6.53       0.60       0.92       1.11       1.37       1.10
-    sum04     6.85       0.80       1.22       1.13       1.44       1.31
-    sum05     9.65       1.20       1.23       1.42       1.40       1.58
-    sum06    14.94       1.21       1.23       1.43       1.42       1.61
-    p_sum01   1.30       1.46       1.86       2.86       3.63       1.91
-    p_sum02   2.16       1.46       2.11       3.09       5.47       2.35
-    p_sum03   1.46       2.38       3.07       3.82       5.33       2.66
+          (1000,1000)(1000,1000)(1000,1000)(1000,1000)
+            float64    float32     int64      int32
+             axis=0     axis=0     axis=0     axis=0     score
+    sum00     0.34       0.22       0.57       1.19       0.40
+    sum01     0.35       0.22       0.64       1.19       0.40
+    sum02     0.47       0.27       0.69       1.20       0.49
+    sum03     0.61       0.41       0.90       1.88       0.70
+    sum04     0.80       0.45       1.21       1.89       0.83
+    sum05     1.20       0.45       1.21       1.89       0.91
+    sum06     1.21       0.45       1.21       1.90       0.91
+    p_sum01   1.41       0.21       1.97       1.29       0.58
+    p_sum02   1.33       0.21       1.97       1.29       0.59
+    p_sum03   1.45       0.62       2.65       3.71       1.36
+
+    >>> ss.bench_axis1()
+    some_sums performance benchmark
+        some_sums 0.0.1.dev0; Numpy 1.11.2
+        Speed is NumPy time divided by some_sums time
+        Score is harmonic mean of speeds
+
+          (1000,1000)(1000,1000)(1000,1000)(1000,1000)
+            float64    float32     int64      int32
+             axis=1     axis=1     axis=1     axis=1     score
+    sum00     0.47       0.44       0.82       1.90       0.65
+    sum01     0.47       0.44       1.05       2.62       0.70
+    sum02     1.12       1.29       1.37       4.40       1.52
+    sum03     1.11       1.29       1.39       4.41       1.53
+    sum04     1.10       1.29       1.35       4.36       1.50
+    sum05     1.33       1.28       1.35       4.36       1.60
+    sum06     1.38       1.28       1.35       4.36       1.61
+    p_sum01   2.62       1.68       3.18       6.94       2.79
+    p_sum02   3.32       4.09       4.56      13.74       4.78
+    p_sum03   3.08       2.67       4.80      10.55       3.99
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
 should be possible to beat NumPy's performance. That's because some_sums has
@@ -62,25 +82,45 @@ some_sums, which is a speed of 2/2.5 = 0.8.
 
 Let's look at function call overhead by benchmarking with small input arrays::
 
-    >>> ss.bench_overhead()
+    >>> ss.bench_overhead_axis0()
     some_sums performance benchmark
         some_sums 0.0.1.dev0; Numpy 1.11.2
         Speed is NumPy time divided by some_sums time
         Score is harmonic mean of speeds
 
-             (1,1)     (10,10)    (40,40)    (60,60)   (100,100)
-            float64    float64    float64    float64    float64
-             axis=1     axis=1     axis=1     axis=1     axis=1     score
-    sum00    15.10      11.25       2.41       1.39       0.94       2.13
-    sum01    13.03      10.46       2.45       1.72       1.00       2.31
-    sum02    12.82      12.10       5.35       3.74       2.43       4.87
-    sum03    13.10      11.40       5.23       3.57       2.35       4.71
-    sum04    14.94      13.49       5.70       3.81       2.43       5.05
-    sum05    14.92      14.20       7.16       5.20       3.36       6.52
-    sum06    14.78      10.97       7.56       5.03       2.99       6.07
-    p_sum01   1.59       1.79       1.79       2.09       1.97       1.83
-    p_sum02   1.42       1.71       1.81       2.22       2.74       1.88
-    p_sum03   1.86       1.68       1.97       2.10       2.47       1.99
+            (10,10)    (10,10)    (10,10)    (10,10)
+            float64    float32     int64      int32
+             axis=0     axis=0     axis=0     axis=0     score
+    sum00    13.88      12.96      13.34      16.08      13.97
+    sum01    12.61      13.02      13.33      14.81      13.39
+    sum02    15.46      14.63      14.46      15.95      15.10
+    sum03    15.72      14.81      14.59      16.15      15.29
+    sum04    15.60      14.19      14.87      16.17      15.17
+    sum05    16.73      14.31      14.93      16.09      15.45
+    sum06    17.03      14.42      14.98      16.27      15.61
+    p_sum01   1.35       1.21       1.47       1.73       1.42
+    p_sum02   1.44       0.90       1.59       1.85       1.35
+    p_sum03   1.71       1.12       1.40       1.78       1.45
+
+    >>> ss.bench_overhead_axis1()
+    some_sums performance benchmark
+        some_sums 0.0.1.dev0; Numpy 1.11.2
+        Speed is NumPy time divided by some_sums time
+        Score is harmonic mean of speeds
+
+            (10,10)    (10,10)    (10,10)    (10,10)
+            float64    float32     int64      int32
+             axis=1     axis=1     axis=1     axis=1     score
+    sum00    13.57      12.63      12.78      15.65      13.56
+    sum01    12.17      12.58      12.55      14.07      12.80
+    sum02    14.67      13.66      13.37      14.84      14.11
+    sum03    13.33      12.71      12.73      13.55      13.07
+    sum04    16.38      15.70      15.28      16.45      15.94
+    sum05    17.03      15.76      15.30      16.55      16.13
+    sum06    12.64      15.42      15.12      16.59      14.79
+    p_sum01   1.95       1.43       1.67       1.77       1.68
+    p_sum02   1.52       1.63       1.47       1.74       1.58
+    p_sum03   1.50       1.48       1.65       1.86       1.61
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have

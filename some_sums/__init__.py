@@ -13,7 +13,7 @@ except:
 
 try:
     from some_sums.version import __version__
-    from some_sums.benchmark import bench, bench_overhead, bench_3d
+    from some_sums.benchmark import *
     from some_sums.util import get_functions
 except:
     pass

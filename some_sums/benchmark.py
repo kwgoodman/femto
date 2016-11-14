@@ -3,15 +3,37 @@ import timeit
 import numpy as np
 import some_sums as ss
 
-__all__ = ['bench']
+__all__ = ['bench_axis0', 'bench_axis1',
+           'bench_overhead_axis0', 'bench_overhead_axis1',
+           'bench', 'bench_3d']
 
 
-def bench_overhead(shapes=[(1, 1), (10, 10), (40, 40), (60, 60), (100, 100)],
-                   dtypes=['float64', 'float64', 'float64', 'float64',
-                           'float64'],
-                   axes=[1, 1, 1, 1, 1], order='C', functions=None):
+def bench_axis0():
+    "Benchmark performance along axis 0"
+    bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
+          dtypes=['float64', 'float32', 'int64', 'int32'],
+          axes=[0, 0, 0, 0])
+
+
+def bench_axis1():
+    "Benchmark performance along axis 1"
+    bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
+          dtypes=['float64', 'float32', 'int64', 'int32'],
+          axes=[1, 1, 1, 1])
+
+
+def bench_overhead_axis0():
     "Benchmark performance with small input arrays"
-    bench(shapes, dtypes, axes, order, functions)
+    bench(shapes=[(10, 10), (10, 10), (10, 10), (10, 10)],
+          dtypes=['float64', 'float32', 'int64', 'int32'],
+          axes=[0, 0, 0, 0])
+
+
+def bench_overhead_axis1():
+    "Benchmark performance with small input arrays"
+    bench(shapes=[(10, 10), (10, 10), (10, 10), (10, 10)],
+          dtypes=['float64', 'float32', 'int64', 'int32'],
+          axes=[1, 1, 1, 1])
 
 
 def bench_3d(shapes=[(100, 100, 100), (100, 100, 100), (100, 100, 100)],

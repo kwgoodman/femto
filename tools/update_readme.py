@@ -6,18 +6,26 @@ import some_sums as ss
 
 
 def update_readme():
-    update_bench('bench')
-    update_bench('bench_overhead')
+    update_bench('bench_axis0')
+    update_bench('bench_axis1')
+    update_bench('bench_overhead_axis0')
+    update_bench('bench_overhead_axis1')
 
 
 def update_bench(name):
 
-    if name == 'bench':
-        bench_func = ss.bench
-        target_str = '>>> ss.bench()'
-    elif name == 'bench_overhead':
-        bench_func = ss.bench_overhead
-        target_str = '>>> ss.bench_overhead()'
+    if name == 'bench_axis0':
+        bench_func = ss.bench_axis0
+        target_str = '>>> ss.bench_axis0()'
+    elif name == 'bench_axis1':
+        bench_func = ss.bench_axis1
+        target_str = '>>> ss.bench_axis1()'
+    elif name == 'bench_overhead_axis0':
+        bench_func = ss.bench_overhead_axis0
+        target_str = '>>> ss.bench_overhead_axis0()'
+    elif name == 'bench_overhead_axis1':
+        bench_func = ss.bench_overhead_axis1
+        target_str = '>>> ss.bench_overhead_axis1()'
     else:
         raise ValueError("`name` not recognized")
 
