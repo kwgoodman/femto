@@ -17,7 +17,7 @@ def bench_axis1(functions=None):
     "Benchmark performance along axis 1"
     bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
           dtypes=['float64', 'float32', 'int64', 'int32'],
-          axes=[1, 1, 1, 1])
+          axes=[1, 1, 1, 1], functions=functions)
 
 
 def bench_overhead(functions=None):

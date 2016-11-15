@@ -630,7 +630,129 @@ sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 }
 /* dtype end */
 
-/* dtype = [['float32'], ['int64'], ['int32']] */
+/* dtype = [['float32']] */
+static PyObject *
+sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
+{
+    PyObject *y;
+    if (axis == fast_axis) {
+        INIT01(DTYPE0, DTYPE0)
+        if (LENGTH < 17 || !IS_CONTIGUOUS(a)) {
+            /* could loop unroll here */
+            WHILE {
+                npy_DTYPE0 asum = 0;
+                FOR asum += AI(DTYPE0);
+                YPP = asum;
+                NEXT
+            }
+        }
+        else {
+            const Py_ssize_t i_simd = LENGTH - LENGTH % 16;
+            WHILE {
+                float sum_simd, sum = 0.0;
+                float *ad = (float *)it.pa;
+                __m128 vsum0, vsum1, vsum2, vsum3;
+                npy_uintp peel = calc_peel(ad, sizeof(float), 16);
+                npy_intp i = 0;
+                for (; i < peel; i++) {
+                    sum += ad[i];
+                }
+                vsum0 = _mm_load_ps(&ad[peel + 0]);
+                vsum1 = _mm_load_ps(&ad[peel + 4]);
+                vsum2 = _mm_load_ps(&ad[peel + 8]);
+                vsum3 = _mm_load_ps(&ad[peel + 12]);
+                for (i = i + 16; i < i_simd + peel; i += 16)
+                {
+                    __m128 v0 = _mm_load_ps(&ad[i]);
+                    __m128 v1 = _mm_load_ps(&ad[i + 4]);
+                    __m128 v2 = _mm_load_ps(&ad[i + 8]);
+                    __m128 v3 = _mm_load_ps(&ad[i + 12]);
+                    vsum0 = _mm_add_ps(vsum0, v0);
+                    vsum1 = _mm_add_ps(vsum1, v1);
+                    vsum2 = _mm_add_ps(vsum2, v2);
+                    vsum3 = _mm_add_ps(vsum3, v3);
+                }
+                vsum0 = _mm_add_ps(vsum0, vsum1);
+                vsum1 = _mm_add_ps(vsum2, vsum3);
+                vsum0 = _mm_add_ps(vsum0, vsum1);
+
+                __m128 shuf = _mm_movehdup_ps(vsum0);
+                __m128 sums = _mm_add_ps(vsum0, shuf);
+                shuf        = _mm_movehl_ps(shuf, sums);
+                sums        = _mm_add_ss(sums, shuf);
+                sum_simd    = _mm_cvtss_f32(sums);
+
+                for (; i < LENGTH; i++) {
+                    sum += ad[i];
+                }
+                YPP = sum + sum_simd;
+                NEXT
+            }
+        }
+    }
+    else {
+        INIT2(DTYPE0, DTYPE0)
+        if (LENGTH < 4) {
+            WHILE {
+                FOR {
+                    YI(DTYPE0) += AI(DTYPE0);
+                }
+                NEXT2
+            }
+        }
+        else {
+            if (!IS_CONTIGUOUS(a) || LENGTH & 3 || (npy_uintp)it.pa & 15) {
+                const Py_ssize_t repeat = LENGTH - LENGTH % 4;
+                WHILE {
+                    npy_intp i = 0;
+                    for (; i < repeat; i += 4) {
+                        YX(DTYPE0, i) += AX(DTYPE0, i);
+                        YX(DTYPE0, i + 1) += AX(DTYPE0, i + 1);
+                        YX(DTYPE0, i + 2) += AX(DTYPE0, i + 2);
+                        YX(DTYPE0, i + 3) += AX(DTYPE0, i + 3);
+                    }
+                    for (; i < LENGTH; i++) {
+                        YX(DTYPE0, i) += AX(DTYPE0, i);
+                    }
+                    NEXT2
+                }
+            }
+            else {
+                const Py_ssize_t i_simd = LENGTH - LENGTH % 16;
+                WHILE {
+                    float *ad = (float *)it.pa;
+                    float *yd = (float *)it.py;
+                    npy_intp i = 0;
+                    for (; i < i_simd; i += 16)
+                    {
+                        __m128 a0 = _mm_load_ps(&ad[i]);
+                        __m128 a1 = _mm_load_ps(&ad[i + 4]);
+                        __m128 a2 = _mm_load_ps(&ad[i + 8]);
+                        __m128 a3 = _mm_load_ps(&ad[i + 12]);
+
+                        __m128 y0 = _mm_load_ps(&yd[i]);
+                        __m128 y1 = _mm_load_ps(&yd[i + 4]);
+                        __m128 y2 = _mm_load_ps(&yd[i + 8]);
+                        __m128 y3 = _mm_load_ps(&yd[i + 12]);
+
+                        _mm_store_ps(&yd[i],     _mm_add_ps(y0, a0));
+                        _mm_store_ps(&yd[i + 4], _mm_add_ps(y1, a1));
+                        _mm_store_ps(&yd[i + 8], _mm_add_ps(y2, a2));
+                        _mm_store_ps(&yd[i + 12], _mm_add_ps(y3, a3));
+                    }
+                    for (; i < LENGTH; i++) {
+                        yd[i] += ad[i];
+                    }
+                    NEXT2
+                }
+            }
+        }
+    }
+    return y;
+}
+/* dtype end */
+
+/* dtype = [['int64'], ['int32']] */
 static PyObject *
 sum05_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 {
