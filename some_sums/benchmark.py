@@ -3,37 +3,28 @@ import timeit
 import numpy as np
 import some_sums as ss
 
-__all__ = ['bench_axis0', 'bench_axis1',
-           'bench_overhead_axis0', 'bench_overhead_axis1',
-           'bench', 'bench_3d']
+__all__ = ['bench_axis0', 'bench_axis1', 'bench_overhead', 'bench', 'bench_3d']
 
 
-def bench_axis0():
+def bench_axis0(functions=None):
     "Benchmark performance along axis 0"
     bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
           dtypes=['float64', 'float32', 'int64', 'int32'],
-          axes=[0, 0, 0, 0])
+          axes=[0, 0, 0, 0], functions=functions)
 
 
-def bench_axis1():
+def bench_axis1(functions=None):
     "Benchmark performance along axis 1"
     bench(shapes=[(1000, 1000), (1000, 1000), (1000, 1000), (1000, 1000)],
           dtypes=['float64', 'float32', 'int64', 'int32'],
           axes=[1, 1, 1, 1])
 
 
-def bench_overhead_axis0():
+def bench_overhead(functions=None):
     "Benchmark performance with small input arrays"
-    bench(shapes=[(10, 10), (10, 10), (10, 10), (10, 10)],
-          dtypes=['float64', 'float32', 'int64', 'int32'],
-          axes=[0, 0, 0, 0])
-
-
-def bench_overhead_axis1():
-    "Benchmark performance with small input arrays"
-    bench(shapes=[(10, 10), (10, 10), (10, 10), (10, 10)],
-          dtypes=['float64', 'float32', 'int64', 'int32'],
-          axes=[1, 1, 1, 1])
+    bench(shapes=[(1, 1), (10, 10), (60, 60), (100, 100), (1, 1000)],
+          dtypes=['float64', 'float64', 'float64', 'float64', 'float64'],
+          axes=[1, 1, 1, 1, 1], functions=functions)
 
 
 def bench_3d(shapes=[(100, 100, 100), (100, 100, 100), (100, 100, 100)],

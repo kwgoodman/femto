@@ -187,7 +187,7 @@ REDUCE_MAIN(NAME)
 
 /* add special casing for summing along non-fast axis */
 
-#define N03 4
+#define N03 8
 
 struct _piter2 {
     Py_ssize_t fast_length;
@@ -365,16 +365,28 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
             s[1] = AP(DTYPE0, 1);
             s[2] = AP(DTYPE0, 2);
             s[3] = AP(DTYPE0, 3);
+            s[4] = AP(DTYPE0, 4);
+            s[5] = AP(DTYPE0, 5);
+            s[6] = AP(DTYPE0, 6);
+            s[7] = AP(DTYPE0, 7);
             for (i = 1; i < it.length; i++) {
                 s[0] += AP(DTYPE0, 0);
                 s[1] += AP(DTYPE0, 1);
                 s[2] += AP(DTYPE0, 2);
                 s[3] += AP(DTYPE0, 3);
+                s[4] += AP(DTYPE0, 4);
+                s[5] += AP(DTYPE0, 5);
+                s[6] += AP(DTYPE0, 6);
+                s[7] += AP(DTYPE0, 7);
             }
             YP(DTYPE0, 0) = s[0];
             YP(DTYPE0, 1) = s[1];
             YP(DTYPE0, 2) = s[2];
             YP(DTYPE0, 3) = s[3];
+            YP(DTYPE0, 4) = s[4];
+            YP(DTYPE0, 5) = s[5];
+            YP(DTYPE0, 6) = s[6];
+            YP(DTYPE0, 7) = s[7];
         }
         for (its = it.nits4; its < it.nits; its++) {
             npy_intp i;
