@@ -91,21 +91,21 @@ Let's look at function call overhead by benchmarking with small input arrays::
         Speed is NumPy time divided by some_sums time
         Score is harmonic mean of speeds
 
-             (1,1)     (10,10)    (60,60)   (100,100)   (1,1000)
-            float64    float64    float64    float64    float64
-             axis=1     axis=1     axis=1     axis=1     axis=1     score
-    sum00    20.65      14.58       1.74       0.95       3.27       2.44
-    sum01    16.61      12.01       1.76       1.01       3.16       2.48
-    sum02    16.66      14.20       3.92       2.47       6.97       5.35
-    sum03    16.36      12.64       3.58       2.35       6.93       5.05
-    sum04    16.43      12.64       3.35       2.33       6.89       4.93
-    sum10    20.21      16.37       4.08       2.50       7.52       5.63
-    sum11    19.97      17.10       5.63       3.36      11.05       7.42
-    sum12    20.07      14.57       5.06       2.94      14.35       6.89
-    p_sum01   1.56       1.59       2.09       2.33       1.24       1.68
-    p_sum02   1.49       1.70       2.25       2.54       1.68       1.86
-    p_sum03   1.63       1.68       2.11       2.00       1.64       1.79
-    p_sum04   1.60       1.66       1.86       2.19       1.67       1.77
+            (10,10)    (10,10)   (100,100)  (100,1000)
+            float64    float64    float64    float64
+             axis=0     axis=1     axis=0     axis=1     score
+    sum00    12.27      12.21       1.11       0.50       1.30
+    sum01    10.81      10.28       1.15       0.50       1.31
+    sum02    12.89      12.11       2.71       1.34       3.14
+    sum03    12.88      10.53       2.77       1.33       3.11
+    sum04    13.44      10.53       4.38       1.33       3.48
+    sum10    12.15      13.45       1.93       1.35       2.82
+    sum11    12.70      14.03       3.14       1.73       3.82
+    sum12    12.78      12.27       3.17       1.68       3.74
+    p_sum01   1.84       1.77       2.66       2.94       2.19
+    p_sum02   1.90       1.82       3.05       4.18       2.44
+    p_sum03   1.97       1.84       2.94       4.06       2.44
+    p_sum04   1.92       1.85       3.60       4.05       2.52
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have
