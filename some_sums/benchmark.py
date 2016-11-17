@@ -3,7 +3,8 @@ import timeit
 import numpy as np
 import some_sums as ss
 
-__all__ = ['bench_axis0', 'bench_axis1', 'bench_overhead', 'bench', 'bench_3d']
+__all__ = ['bench_axis0', 'bench_axis1', 'bench_overhead', 'bench',
+           'bench_3d', 'bench_detailed']
 
 
 def bench_axis0(functions=None):
@@ -41,7 +42,7 @@ def bench(shapes=[(1, 1000), (1000, 1000), (1000, 1000), (1000, 1000),
           order='C',
           functions=None):
     """
-    Bottleneck benchmark.
+    Some_sums benchmark.
 
     Parameters
     ----------
@@ -166,3 +167,120 @@ def autoscaler(timer, mintime):
             return number, time
         number *= 10
     raise RuntimeError('function is too fast to test')
+
+
+# ---------------------------------------------------------------------------
+
+def bench_detailed(function='sum04'):
+    """
+    Benchmark a single function in detail or, optionally, all functions.
+
+    Parameters
+    ----------
+    function : str, optional
+        Name of function, as a string, to benchmark. Default ('nansum') is
+        to benchmark bn.nansum. If `function` is 'all' then detailed
+        benchmarks are run on all bottleneck functions.
+
+    Returns
+    -------
+    A benchmark report is printed to stdout.
+
+    """
+
+    if function == 'all':
+        # benchmark all some_sums functions
+        funcs = ss.get_functions(as_string=True)
+        funcs.sort()
+        for func in funcs:
+            bench_detailed(func)
+
+    # header
+    print('%s benchmark' % function)
+    print("    some_sums %s; Numpy %s" % (ss.__version__, np.__version__))
+    print("    Speed is NumPy time divided by some_sums time")
+    print('')
+
+    print("   Speed   Call            Array")
+    suite = benchsuite_detailed(function)
+    for test in suite:
+        name = test["name"]
+        speed = timer_detailed(test['statements'], test['setup'],
+                               test['repeat'])
+        print("%8.1f   %s   %s" % (speed, name[0].ljust(13), name[1]))
+
+
+def benchsuite_detailed(function):
+
+    # setup is called before each run of each function
+    setup = """
+        from some_sums import %s as ss_fn
+        from numpy import sum as sl_fn
+
+        from numpy.random import RandomState
+        rand = RandomState(123).rand
+
+        a = %s
+    """
+    setup = '\n'.join([s.strip() for s in setup.split('\n')])
+
+    # create benchmark suite
+    instructions = get_instructions()
+    f = function
+    suite = []
+    for instruction in instructions:
+        array = instruction[0]
+        signature = instruction[1]
+        repeat = instruction[2]
+        run = {}
+        run['name'] = [f + signature, array]
+        run['statements'] = ["ss_fn" + signature, "sl_fn" + signature]
+        run['setup'] = setup % (f, array)
+        run['repeat'] = repeat
+        suite.append(run)
+
+    return suite
+
+
+def timer_detailed(statements, setup, repeat=3):
+    if len(statements) != 2:
+        raise ValueError("Two statements needed.")
+    with np.errstate(invalid='ignore'):
+        t0 = autotimeit(statements[0], setup, repeat=repeat)
+        t1 = autotimeit(statements[1], setup, repeat=repeat)
+    speed = t1 / t0
+    return speed
+
+
+def get_instructions():
+
+    instructions = [
+
+        ("rand(10, 10)", "(a, 0)", 6),
+        ("rand(10, 10)", "(a, 1)", 6),
+
+        ("rand(100, 100)", "(a, 0)", 3),
+        ("rand(100, 100)", "(a, 1)", 3),
+
+        ("rand(1000, 1000)", "(a, 0)", 2),
+        ("rand(1000, 1000)", "(a, 1)", 2),
+
+        ("rand(1, 1000)", "(a, 0)", 3),
+        ("rand(1, 1000)", "(a, 1)", 3),
+
+        ("rand(100, 100, 100)", "(a, 0)", 2),
+        ("rand(100, 100, 100)", "(a, 1)", 2),
+        ("rand(100, 100, 100)", "(a, 2)", 2),
+
+        ("rand(100000, 10)", "(a, 0)", 2),
+        ("rand(100000, 10)", "(a, 1)", 2),
+
+        ("rand(2000, 1000)[::2]", "(a, 0)", 2),
+        ("rand(2000, 1000)[::2]", "(a, 1)", 2),
+
+        ("rand(1000, 2000)[:,::2]", "(a, 0)", 2),
+        ("rand(1000, 2000)[:,::2]", "(a, 1)", 2),
+
+     ]
+
+    return instructions
