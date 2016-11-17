@@ -21,10 +21,12 @@ def func_dict():
                  ss.sum02,
                  ss.sum03,
                  ss.sum04,
-                 ss.sum05,
-                 ss.sum06,
+                 ss.sum10,
+                 ss.sum11,
+                 ss.sum12,
                  ss.p_sum01,
                  ss.p_sum02,
                  ss.p_sum03,
+                 ss.p_sum04,
                  ]
     return d

@@ -109,10 +109,13 @@ def array_iter(dtypes=DTYPES):
                 else:
                     raise ValueError("`ndim` must be 2")
 
-    # big array
-    yield rs.rand(1000, 1000)
-    yield rs.rand(1000, 1001)
-    yield rs.rand(1001, 1001)
+    # big arrays
+    shapes = [(100, 100), (9, 10, 11), (11, 13, 17), (21, 20, 29)]
+    for shape in shapes:
+        a = np.arange(np.prod(shape)).reshape(*shape)
+        for dtype in dtypes:
+            if dtype != np.float32:  # round off error in sum11
+                yield a.astype(dtype)
 
 
 def array_order(a):

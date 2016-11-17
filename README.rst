@@ -18,9 +18,8 @@ require different optimizations.
 My goal is to find fast ways to implement reduction functions (sum, mean,
 std, max, nansum, etc.) that are bound by memory I/O. I chose summation as a
 test case because very little time is spent with arithmetic which makes it
-easier to measure improvements from things like manual loop unrolling (sum02,
-sum03, sum04), SSE3 (sum05), AVX (sum06), and OpenMP (p_sum01, p_sum02,
-p_sum03).
+easier to measure improvements from things like manual loop unrolling, SIMD,
+and OpenMP.
 
 some_sums, based on code from `bottleneck`_, comes with several benchmark
 suites::
@@ -34,16 +33,18 @@ suites::
           (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float32     int64      int32
              axis=0     axis=0     axis=0     axis=0     score
-    sum00     0.34       0.22       0.64       1.62       0.42
-    sum01     0.36       0.22       0.66       1.61       0.42
-    sum02     0.48       0.27       0.71       1.63       0.51
-    sum03     0.86       0.47       0.91       2.15       0.82
-    sum04     0.80       0.45       1.22       2.57       0.85
-    sum05     1.21       1.31       1.21       2.58       1.43
-    sum06     1.19       0.45       1.21       2.57       0.94
-    p_sum01   1.28       0.21       2.30       1.00       0.58
-    p_sum02   1.51       0.21       2.35       0.78       0.56
-    p_sum03   2.26       1.06       2.51       6.06       2.05
+    sum00     0.34       0.22       0.63       1.19       0.40
+    sum01     0.35       0.22       0.64       1.19       0.40
+    sum02     0.48       0.27       0.74       1.20       0.50
+    sum03     0.69       0.44       0.92       1.53       0.73
+    sum04     0.86       0.44       0.71       1.53       0.72
+    sum10     0.80       0.45       1.21       1.89       0.83
+    sum11     1.21       1.32       1.21       1.89       1.36
+    sum12     1.22       0.45       1.22       1.89       0.91
+    p_sum01   1.43       0.21       2.31       1.30       0.60
+    p_sum02   1.60       0.21       2.45       1.28       0.62
+    p_sum03   1.95       1.09       2.74       4.26       1.97
+    p_sum04   3.07       1.04       2.77       4.21       2.12
 
     >>> ss.bench_axis1()
     some_sums performance benchmark
@@ -54,16 +55,18 @@ suites::
           (1000,1000)(1000,1000)(1000,1000)(1000,1000)
             float64    float32     int64      int32
              axis=1     axis=1     axis=1     axis=1     score
-    sum00     0.46       0.44       0.84       1.87       0.65
-    sum01     0.46       0.44       1.05       2.64       0.70
-    sum02     1.13       1.29       1.40       4.39       1.54
-    sum03     1.15       1.29       1.40       4.42       1.55
-    sum04     1.13       1.28       1.39       4.36       1.53
-    sum05     1.41       2.97       1.41       4.37       2.02
-    sum06     1.44       1.28       1.40       4.37       1.65
-    p_sum01   2.16       3.04       3.34       9.70       3.35
-    p_sum02   4.13       4.42       5.84      15.44       5.68
-    p_sum03   3.71       4.33       3.81      11.88       4.72
+    sum00     0.46       0.44       0.85       1.32       0.63
+    sum01     0.46       0.44       1.06       1.85       0.68
+    sum02     1.14       1.29       1.41       3.09       1.49
+    sum03     1.13       1.28       1.37       3.08       1.47
+    sum04     1.13       1.28       1.38       3.08       1.48
+    sum10     1.11       1.29       1.35       3.07       1.46
+    sum11     1.39       3.00       1.36       3.07       1.89
+    sum12     1.36       1.28       1.34       3.07       1.55
+    p_sum01   3.04       3.02       3.98       6.86       3.78
+    p_sum02   4.00       4.46       5.63      10.79       5.37
+    p_sum03   4.09       4.33       5.49      10.62       5.32
+    p_sum04   4.13       4.21       5.59      10.38       5.30
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
 should be possible to beat NumPy's performance. That's because some_sums has
@@ -91,16 +94,18 @@ Let's look at function call overhead by benchmarking with small input arrays::
              (1,1)     (10,10)    (60,60)   (100,100)   (1,1000)
             float64    float64    float64    float64    float64
              axis=1     axis=1     axis=1     axis=1     axis=1     score
-    sum00    20.81      14.82       1.76       0.96       3.39       2.48
-    sum01    16.82      13.18       1.85       1.01       3.28       2.53
-    sum02    16.72      14.59       3.90       2.47       7.26       5.40
-    sum03    17.11      13.63       3.76       2.38       7.29       5.24
-    sum04    20.39      16.25       4.04       2.56       7.83       5.70
-    sum05    20.28      17.03       5.41       3.43      11.50       7.45
-    sum06    20.00      12.75       4.93       2.98      14.89       6.81
-    p_sum01   1.44       1.53       2.04       2.29       1.31       1.64
-    p_sum02   1.49       1.86       2.25       2.72       1.54       1.87
-    p_sum03   1.75       1.52       2.16       2.46       1.62       1.84
+    sum00    20.65      14.58       1.74       0.95       3.27       2.44
+    sum01    16.61      12.01       1.76       1.01       3.16       2.48
+    sum02    16.66      14.20       3.92       2.47       6.97       5.35
+    sum03    16.36      12.64       3.58       2.35       6.93       5.05
+    sum04    16.43      12.64       3.35       2.33       6.89       4.93
+    sum10    20.21      16.37       4.08       2.50       7.52       5.63
+    sum11    19.97      17.10       5.63       3.36      11.05       7.42
+    sum12    20.07      14.57       5.06       2.94      14.35       6.89
+    p_sum01   1.56       1.59       2.09       2.33       1.24       1.68
+    p_sum02   1.49       1.70       2.25       2.54       1.68       1.86
+    p_sum03   1.63       1.68       2.11       2.00       1.64       1.79
+    p_sum04   1.60       1.66       1.86       2.19       1.67       1.77
 
 Please help me avoid over optimizing for my particular operating system, CPU,
 and compiler. `Let me know`_ the benchmark results on your system. If you have
