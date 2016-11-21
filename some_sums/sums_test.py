@@ -110,7 +110,7 @@ def array_iter(dtypes=DTYPES):
                     raise ValueError("`ndim` must be 2")
 
     # big arrays
-    shapes = [(100, 100), (9, 10, 11), (11, 13, 17), (21, 20, 29)]
+    shapes = [(100, 100), (8, 8, 8), (9, 10, 11), (11, 13, 17), (21, 20, 29)]
     for shape in shapes:
         a = np.arange(np.prod(shape)).reshape(*shape)
         for dtype in dtypes:

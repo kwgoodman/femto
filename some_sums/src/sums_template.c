@@ -462,6 +462,7 @@ init_piter4(piter4 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype,
 
     fast_nits4 = (it->fast_length - it->fast_length % N04) / N04;
     fast_nits = it->fast_length - N04 * fast_nits4;
+    it->a_offset = strides[axis] / sizeof(double);
     for (i = 0; i < ndim; i++) {
         indices[i] = 0;
         if (i != axis) {
@@ -473,7 +474,6 @@ init_piter4(piter4 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype,
                 it->nits *= shape[i];
             }
             astrides[j] = strides[i];
-            it->a_offset *= shape[i];
             yshape[j] = shape[i];
             j++;
         }
@@ -587,7 +587,8 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
         npy_intp fast_length = PyArray_DIM(a, fast_axis);
         char *pa = PyArray_BYTES(a);
         PyObject *y;
-        if (!IS_CONTIGUOUS(a) || fast_length & 1 || (npy_uintp)pa & 15) {
+        if (!(C_CONTIGUOUS(a) || PyArray_NDIM(a) == 2) || fast_length & 1 ||
+            (npy_uintp)pa & 15) {
             INIT2(DTYPE0, DTYPE0)
             if (LENGTH < 4) {
                 WHILE {
@@ -633,10 +634,21 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
                     s[2] += _mm_load_pd(&ad[4 + i * it.a_offset]);
                     s[3] += _mm_load_pd(&ad[6 + i * it.a_offset]);
                 }
+                /* works for arrays that are 2d or C contiguous or both */
                 _mm_store_pd(&yd[0], s[0]);
                 _mm_store_pd(&yd[2], s[1]);
                 _mm_store_pd(&yd[4], s[2]);
                 _mm_store_pd(&yd[6], s[3]);
+                /* works for all arrays but is slow:
+                _mm_storel_pd(&yd[0 * it.fast_ystride/sizeof(double)], s[0]);
+                _mm_storeh_pd(&yd[1 * it.fast_ystride/sizeof(double)], s[0]);
+                _mm_storel_pd(&yd[2 * it.fast_ystride/sizeof(double)], s[1]);
+                _mm_storeh_pd(&yd[3 * it.fast_ystride/sizeof(double)], s[1]);
+                _mm_storel_pd(&yd[4 * it.fast_ystride/sizeof(double)], s[2]);
+                _mm_storeh_pd(&yd[5 * it.fast_ystride/sizeof(double)], s[2]);
+                _mm_storel_pd(&yd[6 * it.fast_ystride/sizeof(double)], s[3]);
+                _mm_storeh_pd(&yd[7 * it.fast_ystride/sizeof(double)], s[3]);
+                */
             }
             for (its = it.nits4; its < it.nits; its++) {
                 npy_intp i;
