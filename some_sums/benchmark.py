@@ -23,7 +23,7 @@ def bench_axis1(functions=None):
 
 def bench_overhead(functions=None):
     "Benchmark performance with small input arrays"
-    bench(shapes=[(10, 10), (10, 10), (100, 100), (100, 1000)],
+    bench(shapes=[(10, 10), (10, 10), (100, 100), (100, 100)],
           dtypes=['float64', 'float64', 'float64', 'float64'],
           axes=[0, 1, 0, 1], functions=functions)
 

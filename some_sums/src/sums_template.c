@@ -418,128 +418,6 @@ NAME(PyObject *self, PyObject *args, PyObject *kwds)
 
 /* add sse3 to sum03 */
 
-#define N04 8
-
-struct _piter4 {
-    Py_ssize_t fast_length;
-    npy_intp   fast_stride;
-    npy_intp   fast_ystride;
-    Py_ssize_t length;
-    Py_ssize_t astride;
-    npy_intp   nits4;
-    npy_intp   nits;
-    npy_intp   a_offset;
-    char       **ppa;
-    char       **ppy;
-};
-typedef struct _piter4 piter4;
-
-static BN_INLINE void
-init_piter4(piter4 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype,
-            int fast_axis)
-{
-    int i, j = 0;
-    const int ndim = PyArray_NDIM(a);
-    char *pa = PyArray_BYTES(a);
-    char *py;
-    const npy_intp *shape = PyArray_SHAPE(a);
-    const npy_intp *strides = PyArray_STRIDES(a);
-    const npy_intp *ystrides;
-    npy_intp yshape[NPY_MAXDIMS];
-    npy_intp astrides[NPY_MAXDIMS];
-    npy_intp indices[NPY_MAXDIMS];
-    npy_intp fast_nits;
-    npy_intp fast_nits4;
-
-    it->length = shape[axis];
-    it->astride = strides[axis];
-    it->fast_length = shape[fast_axis];
-    it->fast_stride = strides[fast_axis];
-
-    it->nits = 1;
-    it->nits4 = 1;
-    it->a_offset = 1;
-
-    fast_nits4 = (it->fast_length - it->fast_length % N04) / N04;
-    fast_nits = it->fast_length - N04 * fast_nits4;
-    it->a_offset = strides[axis] / sizeof(double);
-    for (i = 0; i < ndim; i++) {
-        indices[i] = 0;
-        if (i != axis) {
-            if (i == fast_axis) {
-                it->nits4 *= fast_nits4;
-                it->nits *= fast_nits;
-            } else {
-                it->nits4 *= shape[i];
-                it->nits *= shape[i];
-            }
-            astrides[j] = strides[i];
-            yshape[j] = shape[i];
-            j++;
-        }
-    }
-    it->nits += it->nits4;
-
-    *y = PyArray_EMPTY(ndim - 1, yshape, ydtype, 0);
-    py = PyArray_BYTES((PyArrayObject *)*y);
-    ystrides = PyArray_STRIDES((PyArrayObject *)*y);
-
-    it->ppa = malloc(2 * it->nits * sizeof(char*));
-    it->ppy = &it->ppa[it->nits];
-
-    fast_axis = fast_axis < axis ? fast_axis : fast_axis - 1;
-    yshape[fast_axis] = N04 * fast_nits4;
-    it->fast_ystride = ystrides[fast_axis];
-    j = 0;
-    for (; j < it->nits4; j++) {
-        it->ppa[j] = pa;
-        it->ppy[j] = py;
-        for (i = ndim - 2; i > -1; i--) {
-            if (i == fast_axis) {
-                if (indices[i] < yshape[i] - N04) {
-                    indices[i] += N04;
-                    pa += N04 * astrides[i];
-                    py += N04 * ystrides[i];
-                    break;
-                }
-            }
-            else {
-                if (indices[i] < yshape[i] - 1) {
-                    indices[i]++;
-                    pa += astrides[i];
-                    py += ystrides[i];
-                    break;
-                }
-            }
-            pa -= indices[i] * astrides[i];
-            py -= indices[i] * ystrides[i];
-            indices[i] = 0;
-        }
-    }
-    yshape[fast_axis] = fast_nits;
-    for (; j < it->nits; j++) {
-        it->ppa[j] = pa + N04 * fast_nits4 * astrides[fast_axis];
-        it->ppy[j] = py + N04 * fast_nits4 * ystrides[fast_axis];
-        for (i = ndim - 2; i > -1; i--) {
-            if (indices[i] < yshape[i] - 1) {
-                indices[i]++;
-                pa += astrides[i];
-                py += ystrides[i];
-                break;
-            }
-            pa -= indices[i] * astrides[i];
-            py -= indices[i] * ystrides[i];
-            indices[i] = 0;
-        }
-    }
-}
-
-#define P_INIT4(dtype) \
-    npy_intp its; \
-    PyObject *y; \
-    piter4 it; \
-    init_piter4(&it, a, axis, &y, NPY_##dtype, fast_axis); \
-
 /* repeat = {'NAME': ['sum04', 'p_sum04'],
              'PARALLEL': ['', '#pragma omp parallel for']} */
 /* dtype = [['float64']] */
@@ -617,7 +495,8 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
             return y;
         }
         else {
-            P_INIT4(DTYPE0)
+            P_INIT2(DTYPE0)
+            npy_intp a_offset = it.astride / sizeof(double);
             PARALLEL
             for (its = 0; its < it.nits4; its++) {
                 Py_ssize_t i;
@@ -629,10 +508,10 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
                 s[2] = _mm_load_pd(&ad[4]);
                 s[3] = _mm_load_pd(&ad[6]);
                 for (i = 1; i < it.length; i++) {
-                    s[0] += _mm_load_pd(&ad[0 + i * it.a_offset]);
-                    s[1] += _mm_load_pd(&ad[2 + i * it.a_offset]);
-                    s[2] += _mm_load_pd(&ad[4 + i * it.a_offset]);
-                    s[3] += _mm_load_pd(&ad[6 + i * it.a_offset]);
+                    s[0] += _mm_load_pd(&ad[0 + i * a_offset]);
+                    s[1] += _mm_load_pd(&ad[2 + i * a_offset]);
+                    s[2] += _mm_load_pd(&ad[4 + i * a_offset]);
+                    s[3] += _mm_load_pd(&ad[6 + i * a_offset]);
                 }
                 /* works for arrays that are 2d or C contiguous or both */
                 _mm_store_pd(&yd[0], s[0]);
