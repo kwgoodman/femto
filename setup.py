@@ -27,8 +27,8 @@ def prepare_modules():
     make_c_files()
     platform = sys.platform
     if platform == "darwin":
-        extra_compile_args = ['-O2', '-fopenmp']
-        extra_link_args = ['-lomp']
+        extra_compile_args = ['-O2', '-fopenmp=libomp']
+        extra_link_args = []
     elif platform == "win32":
         extra_compile_args = ['-O2', '/openmp']
         extra_link_args = []
