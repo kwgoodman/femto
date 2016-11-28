@@ -26,10 +26,7 @@ def prepare_modules():
     from some_sums.src.template import make_c_files
     make_c_files()
     platform = sys.platform
-    if platform == "darwin":
-        extra_compile_args = ['-O2', '-fopenmp=libomp']
-        extra_link_args = []
-    elif platform == "win32":
+    if platform == "win32":
         extra_compile_args = ['-O2', '/openmp']
         extra_link_args = []
     else:
