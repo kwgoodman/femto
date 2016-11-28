@@ -17,6 +17,7 @@
 
 #include "sums.h"
 #include "iterators.h"
+#include "omp.h"
 
 /* sum00 ----------------------------------------------------------------- */
 
@@ -313,10 +314,10 @@ init_piter2(piter2 *it, PyArrayObject *a, int axis, PyObject **y, int ydtype,
     *(npy_##dtype *)(it.ppy[its] + (p) * it.fast_ystride)
 
 /* repeat = {'NAME': ['sum03', 'p_sum03'],
-             'PARALLEL': ['', '#pragma omp parallel for']} */
+             'PARALLEL': ['', '#pragma omp parallel for num_threads(nthreads)']} */
 /* dtype = [['float64'], ['float32'], ['int64'], ['int32']] */
 static PyObject *
-NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
+NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis, int nthreads)
 {
     if (axis == fast_axis) {
         P_INIT(DTYPE0)
@@ -405,7 +406,7 @@ NAME_DTYPE0(PyArrayObject *a, int axis, int fast_axis)
 static PyObject *
 NAME(PyObject *self, PyObject *args, PyObject *kwds)
 {
-    return reducer02(args,
+    return reducer03(args,
                      kwds,
                      NAME_float64,
                      NAME_float32,
@@ -1275,12 +1276,14 @@ sum12(PyObject *self, PyObject *args, PyObject *kwds)
 
 PyObject *pystr_a = NULL;
 PyObject *pystr_axis = NULL;
+PyObject *pystr_nthreads = NULL;
 
 static int
 intern_strings(void) {
     pystr_a = PyString_InternFromString("a");
     pystr_axis = PyString_InternFromString("axis");
-    return pystr_a && pystr_axis;
+    pystr_nthreads = PyString_InternFromString("nthreads");
+    return pystr_a && pystr_axis && pystr_nthreads;
 }
 
 /* reducer --------------------------------------------------------------- */
@@ -1333,6 +1336,79 @@ parse_args(PyObject *args,
     }
     else {
         switch (nargs) {
+            case 2:
+                *axis = PyTuple_GET_ITEM(args, 1);
+            case 1:
+                *a = PyTuple_GET_ITEM(args, 0);
+                break;
+            default:
+                TYPE_ERR("wrong number of arguments");
+                return 0;
+        }
+    }
+
+    return 1;
+
+}
+
+static BN_INLINE int
+parse_args03(PyObject *args,
+           PyObject *kwds,
+           PyObject **a,
+           PyObject **axis,
+           PyObject **n)
+{
+    const Py_ssize_t nargs = PyTuple_GET_SIZE(args);
+    const Py_ssize_t nkwds = kwds == NULL ? 0 : PyDict_Size(kwds);
+    if (nkwds) {
+        int nkwds_found = 0;
+        PyObject *tmp;
+        switch (nargs) {
+            case 2: *n = PyTuple_GET_ITEM(args, 1);
+            case 1: *a = PyTuple_GET_ITEM(args, 0);
+            case 0: break;
+            default:
+                TYPE_ERR("wrong number of arguments");
+                return 0;
+        }
+        switch (nargs) {
+            case 0:
+                *a = PyDict_GetItem(kwds, pystr_a);
+                if (*a == NULL) {
+                    TYPE_ERR("Cannot find `a` keyword input");
+                    return 0;
+                }
+                nkwds_found += 1;
+            case 1:
+                tmp = PyDict_GetItem(kwds, pystr_axis);
+                if (tmp != NULL) {
+                    *axis = tmp;
+                    nkwds_found++;
+                }
+            case 2:
+                tmp = PyDict_GetItem(kwds, pystr_nthreads);
+                if (tmp != NULL) {
+                    *n = tmp;
+                    nkwds_found++;
+                }
+                break;
+            default:
+                TYPE_ERR("wrong number of arguments");
+                return 0;
+        }
+        if (nkwds_found != nkwds) {
+            TYPE_ERR("wrong number of keyword arguments");
+            return 0;
+        }
+        if (nargs + nkwds_found > 2) {
+            TYPE_ERR("too many arguments");
+            return 0;
+        }
+    }
+    else {
+        switch (nargs) {
+            case 3:
+                *n = PyTuple_GET_ITEM(args, 2);
             case 2:
                 *axis = PyTuple_GET_ITEM(args, 1);
             case 1:
@@ -1549,6 +1625,133 @@ reducer02(PyObject *args,
     }
     else if (dtype == NPY_INT32) {
         return f_int32(a, axis, fast_axis);
+    }
+    else {
+        return PyArray_Sum(a, axis, dtype, NULL);
+    }
+
+}
+
+static PyObject *
+reducer03(PyObject *args,
+          PyObject *kwds,
+          fnf3_t f_float64,
+          fnf3_t f_float32,
+          fnf3_t f_int64,
+          fnf3_t f_int32)
+{
+
+    int ndim;
+    int axis;
+    int dtype;
+    int fast_axis;
+    int nthreads;
+
+    PyArrayObject *a;
+
+    PyObject *a_obj = NULL;
+    PyObject *axis_obj = NULL;
+    PyObject *nthreads_obj = NULL;
+
+    if (!parse_args03(args, kwds, &a_obj, &axis_obj, &nthreads_obj)) return NULL;
+
+    /* convert to array if necessary */
+    if PyArray_Check(a_obj) {
+        a = (PyArrayObject *)a_obj;
+    } else {
+        a = (PyArrayObject *)PyArray_FROM_O(a_obj);
+        if (a == NULL) {
+            return NULL;
+        }
+    }
+
+    /* check for byte swapped input array */
+    if PyArray_ISBYTESWAPPED(a) {
+        VALUE_ERR("Byte-swapped arrays are not supported");
+        return NULL;
+    }
+
+    /* does user want to reduce over all axes? */
+    ndim = PyArray_NDIM(a);
+    if (axis_obj == Py_None) {
+        VALUE_ERR("`axis` cannot be None");
+        return NULL;
+    }
+    else if (axis_obj == NULL) {
+        if (ndim < 2) {
+            VALUE_ERR("ndim must be > 1");
+            return NULL;
+        }
+        axis = PyArray_NDIM(a) - 1;
+    }
+    else {
+        axis = PyArray_PyIntAsInt(axis_obj);
+        if (error_converting(axis)) {
+            TYPE_ERR("`axis` must be an integer or None");
+            return NULL;
+        }
+        if (axis < 0) {
+            axis += ndim;
+            if (axis < 0) {
+                PyErr_Format(PyExc_ValueError,
+                             "axis(=%d) out of bounds", axis);
+                return NULL;
+            }
+        }
+        else if (axis >= ndim) {
+            PyErr_Format(PyExc_ValueError, "axis(=%d) out of bounds", axis);
+            return NULL;
+        }
+        if (ndim == 1) {
+            VALUE_ERR("ndim must be > 1");
+            return NULL;
+        }
+    }
+
+    if (C_CONTIGUOUS(a)) {
+        fast_axis = ndim - 1;
+    }
+    else if (F_CONTIGUOUS(a)) {
+        fast_axis = 0;
+    }
+    else {
+        int i;
+        fast_axis = 0;
+        npy_intp *strides = PyArray_STRIDES(a);
+        npy_intp min_stride = strides[0];
+        for (i = 1; i < ndim; i++) {
+            if (strides[i] < min_stride) {
+                min_stride = strides[i];
+                fast_axis = i;
+            }
+        }
+    }
+
+    /* nice threads */
+    if (axis_obj == NULL) {
+        nthreads = 1;
+    }
+    else {
+        nthreads = PyArray_PyIntAsInt(nthreads_obj);
+        if (error_converting(nthreads)) {
+            TYPE_ERR("`nthreads` must be a non-negative integer");
+            return NULL;
+        }
+    }
+
+    dtype = PyArray_TYPE(a);
+
+    if (dtype == NPY_FLOAT64) {
+        return f_float64(a, axis, fast_axis, nthreads);
+    }
+    else if (dtype == NPY_FLOAT32) {
+        return f_float32(a, axis, fast_axis, nthreads);
+    }
+    else if (dtype == NPY_INT64) {
+        return f_int64(a, axis, fast_axis, nthreads);
+    }
+    else if (dtype == NPY_INT32) {
+        return f_int32(a, axis, fast_axis, nthreads);
     }
     else {
         return PyArray_Sum(a, axis, dtype, NULL);

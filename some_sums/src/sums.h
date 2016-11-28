@@ -159,6 +159,7 @@
 
 typedef PyObject *(*fone_t)(PyArrayObject *a, int axis);
 typedef PyObject *(*fnf_t)(PyArrayObject *a, int axis, int fast_axis);
+typedef PyObject *(*fnf3_t)(PyArrayObject *a, int axis, int fast_axis, int nthreads);
 
 static PyObject *
 reducer(PyObject *args,
@@ -175,6 +176,14 @@ reducer02(PyObject *args,
           fnf_t f_float32,
           fnf_t f_int64,
           fnf_t f_int32);
+
+static PyObject *
+reducer03(PyObject *args,
+          PyObject *kwds,
+          fnf3_t f_float64,
+          fnf3_t f_float32,
+          fnf3_t f_int64,
+          fnf3_t f_int32);
 
 
 #if defined(_MSC_VER)
