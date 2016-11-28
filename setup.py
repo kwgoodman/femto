@@ -27,13 +27,13 @@ def prepare_modules():
     make_c_files()
     platform = sys.platform
     if platform == "darwin":
-        extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp']
+        extra_compile_args = ['-O2', '-msse3', '-fopenmp']
         extra_link_args = ['-lomp']
     elif platform == "win32":
-        extra_compile_args = ['-O2', '/openmp', '/arch:AVX']
+        extra_compile_args = ['-O2', '/openmp']
         extra_link_args = []
     else:
-        extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp']
+        extra_compile_args = ['-O2', '-msse3', '-fopenmp']
         extra_link_args = ['-lgomp']
     ext = [Extension("some_sums.sums",
                      sources=["some_sums/src/sums.c"],
