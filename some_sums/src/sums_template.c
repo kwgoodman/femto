@@ -754,9 +754,9 @@ reducer02(PyObject *args,
     }
     else {
         int i;
-        fast_axis = 0;
         npy_intp *strides = PyArray_STRIDES(a);
         npy_intp min_stride = strides[0];
+        fast_axis = 0;
         for (i = 1; i < ndim; i++) {
             if (strides[i] < min_stride) {
                 min_stride = strides[i];
