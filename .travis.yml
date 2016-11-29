@@ -28,7 +28,7 @@ install:
     - source "tools/travis/conda_install.sh"
 
 script:
-    if [ "$TRAVIS_OS_NAME" = "osx" ] && [ "$CC" = "gcc" ]; then export CC=gcc-4.8; fi
+    - if [ "$TRAVIS_OS_NAME" = "osx" ] && [ "$CC" = "gcc" ]; then export CC=gcc-4.8; fi
     - source "tools/travis/ss_setup.sh"
 
 notifications:
