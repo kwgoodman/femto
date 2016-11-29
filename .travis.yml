@@ -15,13 +15,10 @@ matrix:
           env: TEST_DEPS="numpy==1.11.2 nose" PYTHON_VERSION="3.5" PYTHON_ARCH="64"
         - os: osx
           env: TEST_DEPS="numpy==1.11.2 nose" PYTHON_VERSION="2.7" PYTHON_ARCH="64" TEST_RUN="sdist"
-          compiler: gcc49
         - os: osx
           env: TEST_DEPS="numpy==1.11.2 nose" PYTHON_VERSION="3.4" PYTHON_ARCH="64"
-          compiler: gcc49
         - os: osx
           env: TEST_DEPS="numpy==1.11.2 nose" PYTHON_VERSION="3.5" PYTHON_ARCH="64"
-          compiler: gcc49
 
 before_install:
     - uname -a
@@ -31,6 +28,7 @@ install:
     - source "tools/travis/conda_install.sh"
 
 script:
+    if [ "$TRAVIS_OS_NAME" = "osx" ] && [ "$CC" = "gcc" ]; then export CC=gcc-4.8; fi
     - source "tools/travis/ss_setup.sh"
 
 notifications:
