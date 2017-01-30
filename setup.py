@@ -77,7 +77,7 @@ CLASSIFIERS = [
 metadata = dict(name='femto',
                 maintainer="Keith Goodman",
                 maintainer_email="bottle-neck@googlegroups.com",
-                description="What's the fastest way to sum a NumPy array?",
+                description="Fast, multi-threaded NumPy array functions",
                 long_description=get_long_description(),
                 url="https://github.com/kwgoodman/femto",
                 license="GNU GPLv3+",
