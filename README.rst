@@ -119,8 +119,7 @@ femto is distributed under the GPL v3+. See the LICENSE file for details.
 Requirements
 ============
 
-Currently femto only compiles on GNU/Linux. `Please help`_ us with getting
-it to compile on OSX and Windows.
+Currently femto only compiles on GNU/Linux.
 
 - SSE3, AVX, x86intrin.h, OpenMP
 - Python 2.7, 3.4, 3.5
@@ -133,4 +132,3 @@ it to compile on OSX and Windows.
 .. _share: https://github.com/kwgoodman/femto/issues
 .. _pairwise summation: https://en.wikipedia.org/wiki/Pairwise_summation
 .. _Let me know: https://github.com/kwgoodman/femto/issues
-.. _Please help: https://github.com/kwgoodman/femto/issues/1
