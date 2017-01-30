@@ -5,7 +5,7 @@ from itertools import permutations
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-import some_sums as ss
+import femto as ss
 
 DTYPES = [np.float64, np.float32, np.int64, np.int32]
 

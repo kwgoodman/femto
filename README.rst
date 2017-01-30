@@ -1,13 +1,13 @@
-.. image:: https://travis-ci.org/kwgoodman/some_sums.svg?branch=master
-    :target: https://travis-ci.org/kwgoodman/some_sums
+.. image:: https://travis-ci.org/kwgoodman/femto.svg?branch=master
+    :target: https://travis-ci.org/kwgoodman/femto
 =========
-some_sums
+femto
 =========
 
 What's the fastest way to sum a NumPy array?  I don't know---that's why I
-created some_sums.
+created femto.
 
-**some_sums**, written in C, contains several implementations of a sum
+**femto**, written in C, contains several implementations of a sum
 function. To keep things simple the input array must be at least 2d and the
 axis of summation cannot be None. Limiting ourselves to the 1d case would
 have be even simpler. But I am interested in both summing along an axis
@@ -21,13 +21,13 @@ test case because very little time is spent with arithmetic which makes it
 easier to measure improvements from things like manual loop unrolling, SIMD,
 and OpenMP.
 
-some_sums, based on code from `bottleneck`_, comes with several benchmark
+femto, based on code from `bottleneck`_, comes with several benchmark
 suites::
 
     >>> ss.bench_axis0()
-    some_sums performance benchmark
-        some_sums 0.0.1.dev0; Numpy 1.11.2
-        Speed is NumPy time divided by some_sums time
+    femto performance benchmark
+        femto 0.0.1.dev0; Numpy 1.11.2
+        Speed is NumPy time divided by femto time
         Score is harmonic mean of speeds
 
           (1000,1000)(1000,1000)(1000,1000)(1000,1000)
@@ -47,9 +47,9 @@ suites::
     p_sum04   3.22       1.07       2.71       4.33       2.16
 
     >>> ss.bench_axis1()
-    some_sums performance benchmark
-        some_sums 0.0.1.dev0; Numpy 1.11.2
-        Speed is NumPy time divided by some_sums time
+    femto performance benchmark
+        femto 0.0.1.dev0; Numpy 1.11.2
+        Speed is NumPy time divided by femto time
         Score is harmonic mean of speeds
 
           (1000,1000)(1000,1000)(1000,1000)(1000,1000)
@@ -69,7 +69,7 @@ suites::
     p_sum04   4.43       4.30       5.49      10.36       5.43
 
 I chose numpy.sum as a benchmark because it is fast and convenient. It
-should be possible to beat NumPy's performance. That's because some_sums has
+should be possible to beat NumPy's performance. That's because femto has
 an unfair advantage. We will not duplicate the `pairwise summation`_ NumPy
 uses to deal with the accumulated round-off error in floating point arrays.
 
@@ -81,14 +81,14 @@ possibilities are the mean (1.25, which is faster than NumPy), the geometric
 mean (1.0, same as NumPy), or the harmonic mean (0.8, slower). I chose the
 harmonic mean. If a NumPy program spends equal time summing the two benchmark
 arrays, each 1 unit of time, then it will take 1/2 + 2 units of time with
-some_sums, which is a speed of 2/2.5 = 0.8.
+femto, which is a speed of 2/2.5 = 0.8.
 
 Let's look at function call overhead by benchmarking with small input arrays::
 
     >>> ss.bench_overhead()
-    some_sums performance benchmark
-        some_sums 0.0.1.dev0; Numpy 1.11.2
-        Speed is NumPy time divided by some_sums time
+    femto performance benchmark
+        femto 0.0.1.dev0; Numpy 1.11.2
+        Speed is NumPy time divided by femto time
         Score is harmonic mean of speeds
 
             (10,10)    (10,10)   (100,100)  (100,100)
@@ -114,12 +114,12 @@ ideas on how to speed up the `code`_ then `share`_ them.
 License
 =======
 
-some_sums is distributed under the GPL v3+. See the LICENSE file for details.
+femto is distributed under the GPL v3+. See the LICENSE file for details.
 
 Requirements
 ============
 
-Currently some_sums only compiles on GNU/Linux. `Please help`_ us with getting
+Currently femto only compiles on GNU/Linux. `Please help`_ us with getting
 it to compile on OSX and Windows.
 
 - SSE3, AVX, x86intrin.h, OpenMP
@@ -129,8 +129,8 @@ it to compile on OSX and Windows.
 - nose
 
 .. _bottleneck: https://github.com/kwgoodman/bottleneck
-.. _code: https://github.com/kwgoodman/some_sums
-.. _share: https://github.com/kwgoodman/some_sums/issues
+.. _code: https://github.com/kwgoodman/femto
+.. _share: https://github.com/kwgoodman/femto/issues
 .. _pairwise summation: https://en.wikipedia.org/wiki/Pairwise_summation
-.. _Let me know: https://github.com/kwgoodman/some_sums/issues
-.. _Please help: https://github.com/kwgoodman/some_sums/issues/1
+.. _Let me know: https://github.com/kwgoodman/femto/issues
+.. _Please help: https://github.com/kwgoodman/femto/issues/1

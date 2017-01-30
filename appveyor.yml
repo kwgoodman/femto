@@ -51,4 +51,4 @@ build: false
 test_script:
     - "activate %CONDA_VENV%"
     - "%CMD_IN_ENV% pip install --verbose ."
-    - "python tools\\test-installed-some_sums.py"
+    - "python tools\\test-installed-femto.py"

@@ -1,6 +1,6 @@
 include README.rst
-include LICENSE some_sums/LICENSE
+include LICENSE femto/LICENSE
 include Makefile
 
-recursive-include some_sums/src *.c *.h
-exclude some_sums/src/sums.c
+recursive-include femto/src *.c *.h
+exclude femto/src/sums.c

@@ -1,7 +1,7 @@
 
 import timeit
 import numpy as np
-import some_sums as ss
+import femto as ss
 
 __all__ = ['bench_axis0', 'bench_axis1', 'bench_overhead', 'bench',
            'bench_3d', 'bench_detailed']
@@ -42,7 +42,7 @@ def bench(shapes=[(1, 1000), (1000, 1000), (1000, 1000), (1000, 1000),
           order='C',
           functions=None):
     """
-    Some_sums benchmark.
+    femto benchmark.
 
     Parameters
     ----------
@@ -73,9 +73,9 @@ def bench(shapes=[(1, 1000), (1000, 1000), (1000, 1000), (1000, 1000),
         raise ValueError("`dtypes` and `axes` must have the same length")
 
     # header
-    print('some_sums performance benchmark')
-    print("    some_sums %s; Numpy %s" % (ss.__version__, np.__version__))
-    print("    Speed is NumPy time divided by some_sums time")
+    print('femto performance benchmark')
+    print("    femto %s; Numpy %s" % (ss.__version__, np.__version__))
+    print("    Speed is NumPy time divided by femto time")
     print("    Score is harmonic mean of speeds")
     print('')
     header = [" "*4]
@@ -126,7 +126,7 @@ def benchsuite(shapes, dtypes, axes, order, functions):
 
     def getsetups(setup, shapes, dtypes, axes, order):
         template = """
-        from some_sums.benchmark import getarray
+        from femto.benchmark import getarray
         a = getarray(%s, '%s', '%s')
         axis=%s
         %s"""
@@ -145,7 +145,7 @@ def benchsuite(shapes, dtypes, axes, order, functions):
         run = {}
         run['name'] = func
         run['statements'] = ["func(a, axis)", "a.sum(axis)"]
-        setup = "from some_sums import %s as func" % func
+        setup = "from femto import %s as func" % func
         run['setups'] = getsetups(setup, shapes, dtypes, axes, order)
         suite.append(run)
 
@@ -189,7 +189,7 @@ def bench_detailed(function='sum04'):
     """
 
     if function == 'all':
-        # benchmark all some_sums functions
+        # benchmark all femto functions
         funcs = ss.get_functions(as_string=True)
         funcs.sort()
         for func in funcs:
@@ -197,8 +197,8 @@ def bench_detailed(function='sum04'):
 
     # header
     print('%s benchmark' % function)
-    print("    some_sums %s; Numpy %s" % (ss.__version__, np.__version__))
-    print("    Speed is NumPy time divided by some_sums time")
+    print("    femto %s; Numpy %s" % (ss.__version__, np.__version__))
+    print("    Speed is NumPy time divided by femto time")
     print('')
 
     print("   Speed   Call            Array")
@@ -214,7 +214,7 @@ def benchsuite_detailed(function):
 
     # setup is called before each run of each function
     setup = """
-        from some_sums import %s as ss_fn
+        from femto import %s as ss_fn
         from numpy import sum as sl_fn
 
         from numpy.random import RandomState

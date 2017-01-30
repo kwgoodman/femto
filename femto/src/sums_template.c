@@ -1,18 +1,18 @@
 /*
-    This file is part of some_sums.
+    This file is part of femto.
 
-    some_sums is free software: you can redistribute it and/or modify
+    femto is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    some_sums is distributed in the hope that it will be useful,
+    femto is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with some_sums.  If not, see <http://www.gnu.org/licenses/>.
+    along with femto.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "sums.h"
@@ -1558,7 +1558,7 @@ reducer02(PyObject *args,
 
 /* docstrings ------------------------------------------------------------- */
 
-static char module_doc[] = "some_sums's some sums.";
+static char module_doc[] = "femto's some sums.";
 
 static char sum_doc[] =
 /* MULTILINE STRING BEGIN

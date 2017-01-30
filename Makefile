@@ -1,4 +1,4 @@
-# some_sums Makefile
+# femto Makefile
 
 PYTHON=python
 
@@ -20,7 +20,7 @@ build:
 	${PYTHON} setup.py build_ext --inplace
 
 test:
-	${PYTHON} -c "import some_sums;some_sums.test()"
+	${PYTHON} -c "import femto;femto.test()"
 
 flake8:
 	flake8 .
@@ -29,7 +29,7 @@ readme:
 	PYTHONPATH=`pwd`:PYTHONPATH ${PYTHON} tools/update_readme.py
 
 bench:
-	${PYTHON} -c "import some_sums; some_sums.bench()"
+	${PYTHON} -c "import femto; femto.bench()"
 
 sdist:
 	rm -f MANIFEST
@@ -37,8 +37,8 @@ sdist:
 	git status
 
 clean:
-	rm -rf build dist some_sums.egg-info
+	rm -rf build dist femto.egg-info
 	find . -name \*.pyc -delete
 	rm -rf build
-	rm -rf some_sums/sums.so
-	rm -rf some_sums/src/sums.c
+	rm -rf femto/sums.so
+	rm -rf femto/src/sums.c

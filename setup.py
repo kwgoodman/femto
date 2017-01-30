@@ -8,7 +8,7 @@ from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 
 
-# workaround for installing some_sums when numpy is not present
+# workaround for installing femto when numpy is not present
 # taken from:
 # stackoverflow.com/questions/19919905/
 # how-to-bootstrap-numpy-installation-in-setup-py#21621689
@@ -23,7 +23,7 @@ class build_ext(_build_ext):
 
 
 def prepare_modules():
-    from some_sums.src.template import make_c_files
+    from femto.src.template import make_c_files
     make_c_files()
     platform = sys.platform
     if platform == "darwin":
@@ -35,8 +35,8 @@ def prepare_modules():
     else:
         extra_compile_args = ['-O2', '-msse3', '-mavx', '-fopenmp']
         extra_link_args = ['-lgomp']
-    ext = [Extension("some_sums.sums",
-                     sources=["some_sums/src/sums.c"],
+    ext = [Extension("femto.sums",
+                     sources=["femto/src/sums.c"],
                      include_dirs=[],
                      extra_compile_args=extra_compile_args,
                      extra_link_args=extra_link_args)]
@@ -46,13 +46,13 @@ def prepare_modules():
 def get_long_description():
     with open('README.rst', 'r') as fid:
         long_description = fid.read()
-    idx = max(0, long_description.find("some_sums is a collection"))
+    idx = max(0, long_description.find("femto is a collection"))
     long_description = long_description[idx:]
     return long_description
 
 
 def get_version_str():
-    ver_file = os.path.join('some_sums', 'version.py')
+    ver_file = os.path.join('femto', 'version.py')
     with open(ver_file, 'r') as fid:
         version = fid.read()
     version = version.split("= ")
@@ -74,18 +74,18 @@ CLASSIFIERS = [
     "Topic :: Scientific/Engineering"]
 
 
-metadata = dict(name='some_sums',
+metadata = dict(name='femto',
                 maintainer="Keith Goodman",
                 maintainer_email="bottle-neck@googlegroups.com",
                 description="What's the fastest way to sum a NumPy array?",
                 long_description=get_long_description(),
-                url="https://github.com/kwgoodman/some_sums",
+                url="https://github.com/kwgoodman/femto",
                 license="GNU GPLv3+",
                 classifiers=CLASSIFIERS,
                 platforms="OS Independent",
                 version=get_version_str(),
                 packages=find_packages(),
-                package_data={'some_sums': ['LICENSE']},
+                package_data={'femto': ['LICENSE']},
                 requires=['numpy'],
                 install_requires=['numpy'],
                 cmdclass={'build_ext': build_ext},
@@ -95,7 +95,7 @@ metadata = dict(name='some_sums',
 if not(len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
        sys.argv[1] in ('--help-commands', 'egg_info', '--version', 'clean',
                        'build_sphinx'))):
-    # build some_sums
+    # build femto
     metadata['ext_modules'] = prepare_modules()
 
 setup(**metadata)

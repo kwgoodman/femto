@@ -1,4 +1,4 @@
-import some_sums as ss
+import femto as ss
 
 
 def get_functions(as_string=False):

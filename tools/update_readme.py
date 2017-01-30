@@ -2,7 +2,7 @@ from cStringIO import StringIO
 import sys
 import os
 
-import some_sums as ss
+import femto as ss
 
 
 def update_readme():
