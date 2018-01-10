@@ -4,6 +4,11 @@
 femto
 =========
 
+**update: after upgrading ipython timeit now reports that the fastest run
+when using OpenMP is many times faster than the slowest run. So I no longer
+believe the OpenMP results. I guess it was too good to believe that we could
+see a speed up on such small arrays**
+
 What's the fastest way to sum a NumPy array?  I don't know---that's why I
 created femto.
 
